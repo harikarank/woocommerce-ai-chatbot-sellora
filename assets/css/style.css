@@ -1,0 +1,348 @@
+.aiwoo-widget {
+	--aiwoo-primary: #102a43;
+	--aiwoo-surface: #ffffff;
+	--aiwoo-border: rgba(16, 42, 67, 0.12);
+	--aiwoo-shadow: 0 24px 60px rgba(15, 23, 42, 0.22);
+	--aiwoo-copy: #102a43;
+	--aiwoo-copy-soft: #5b7083;
+	--aiwoo-accent-soft: #f0f4f8;
+	position: fixed;
+	right: 20px;
+	bottom: 20px;
+	z-index: 999999;
+	font-family: "Segoe UI", sans-serif;
+}
+
+.aiwoo-launcher {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 10px;
+	width: 62px;
+	height: 62px;
+	border: 0;
+	border-radius: 999px;
+	background: linear-gradient(135deg, var(--aiwoo-primary), #1f6f8b);
+	color: #fff;
+	box-shadow: var(--aiwoo-shadow);
+	cursor: pointer;
+}
+
+.aiwoo-launcher__icon {
+	width: 28px;
+	height: 28px;
+	object-fit: contain;
+}
+
+.aiwoo-launcher__dot {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	background: #6ee7b7;
+	box-shadow: 0 0 0 6px rgba(110, 231, 183, 0.2);
+}
+
+.aiwoo-launcher__label {
+	font-weight: 700;
+	letter-spacing: 0.08em;
+}
+
+.aiwoo-panel {
+	position: absolute;
+	right: 0;
+	bottom: 78px;
+	width: min(390px, calc(100vw - 24px));
+	height: min(590px, calc(100vh - 110px));
+	border: 1px solid var(--aiwoo-border);
+	border-radius: 24px;
+	background:
+		radial-gradient(circle at top right, rgba(31, 111, 139, 0.08), transparent 35%),
+		linear-gradient(180deg, #fff, #f8fbfc);
+	box-shadow: var(--aiwoo-shadow);
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	opacity: 0;
+	transform: translateY(18px) scale(0.96);
+	pointer-events: none;
+	transition: opacity 0.2s ease, transform 0.25s ease;
+}
+
+.aiwoo-widget.is-open .aiwoo-panel {
+	opacity: 1;
+	transform: translateY(0) scale(1);
+	pointer-events: auto;
+}
+
+.aiwoo-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	padding: 14px 18px;
+	background: rgba(255, 255, 255, 0.9);
+	backdrop-filter: blur(14px);
+	border-bottom: 1px solid var(--aiwoo-border);
+}
+
+.aiwoo-panel__header-info {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	min-width: 0;
+}
+
+.aiwoo-panel__logo {
+	flex-shrink: 0;
+	width: 44px;
+	height: 44px;
+	border-radius: 50%;
+	object-fit: cover;
+	border: 2px solid var(--aiwoo-border);
+	box-shadow: 0 2px 8px rgba(16, 42, 67, 0.12);
+}
+
+.aiwoo-panel__header h2,
+.aiwoo-panel__header p {
+	margin: 0;
+}
+
+.aiwoo-panel__header h2 {
+	color: var(--aiwoo-copy);
+	font-size: 16px;
+	font-weight: 700;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.aiwoo-panel__header p {
+	margin-top: 3px;
+	color: var(--aiwoo-copy-soft);
+	font-size: 12px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.aiwoo-close {
+	border: 0;
+	background: transparent;
+	color: var(--aiwoo-copy);
+	font-size: 28px;
+	line-height: 1;
+	cursor: pointer;
+}
+
+.aiwoo-messages {
+	flex: 1;
+	padding: 16px;
+	overflow-y: auto;
+	display: flex;
+	flex-direction: column;
+	gap: 12px;
+}
+
+.aiwoo-loading {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 0 16px 12px;
+}
+
+.aiwoo-loading__dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+	background: var(--aiwoo-primary);
+	opacity: 0.35;
+	animation: aiwoo-loading-pulse 1s infinite ease-in-out;
+}
+
+.aiwoo-loading__dot:nth-child(2) {
+	animation-delay: 0.15s;
+}
+
+.aiwoo-loading__dot:nth-child(3) {
+	animation-delay: 0.3s;
+}
+
+@keyframes aiwoo-loading-pulse {
+	0%,
+	80%,
+	100% {
+		opacity: 0.25;
+		transform: scale(0.85);
+	}
+
+	40% {
+		opacity: 1;
+		transform: scale(1);
+	}
+}
+
+.aiwoo-message-row {
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+}
+
+.aiwoo-message-row--assistant {
+	flex-direction: row;
+	align-self: flex-start;
+}
+
+.aiwoo-message-row--user {
+	flex-direction: row-reverse;
+	align-self: flex-end;
+}
+
+.aiwoo-avatar {
+	flex-shrink: 0;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	overflow: hidden;
+	background: var(--aiwoo-primary);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+
+.aiwoo-avatar img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	display: block;
+}
+
+.aiwoo-avatar--user {
+	color: #fff;
+}
+
+.aiwoo-avatar--user svg {
+	width: 17px;
+	height: 17px;
+}
+
+.aiwoo-avatar--employee {
+	background: var(--aiwoo-accent-soft);
+	border: 1px solid var(--aiwoo-border);
+}
+
+.aiwoo-message {
+	max-width: calc(88% - 38px);
+	padding: 12px 14px;
+	border-radius: 18px;
+	font-size: 14px;
+	line-height: 1.55;
+}
+
+.aiwoo-message p {
+	margin: 0 0 8px;
+}
+
+.aiwoo-message p:last-child {
+	margin-bottom: 0;
+}
+
+.aiwoo-message--assistant {
+	border-bottom-left-radius: 6px;
+	background: var(--aiwoo-accent-soft);
+	color: var(--aiwoo-copy);
+}
+
+.aiwoo-message--user {
+	border-bottom-right-radius: 6px;
+	background: var(--aiwoo-primary);
+	color: #fff;
+}
+
+.aiwoo-product-list {
+	display: grid;
+	gap: 10px;
+	margin-top: 12px;
+}
+
+.aiwoo-product-card {
+	display: grid;
+	gap: 4px;
+	padding: 12px;
+	border-radius: 14px;
+	background: #fff;
+	color: var(--aiwoo-copy);
+	text-decoration: none;
+	border: 1px solid rgba(16, 42, 67, 0.08);
+}
+
+.aiwoo-form {
+	display: grid;
+	grid-template-columns: 1fr auto;
+	gap: 10px;
+	padding: 16px;
+	border-top: 1px solid var(--aiwoo-border);
+	background: #fff;
+}
+
+.aiwoo-input,
+.aiwoo-enquiry-form input,
+.aiwoo-enquiry-form textarea {
+	min-height: 48px;
+	border: 1px solid rgba(16, 42, 67, 0.16);
+	border-radius: 14px;
+	padding: 12px 14px;
+	font: inherit;
+	color: var(--aiwoo-copy);
+	background: #fff;
+}
+
+.aiwoo-input {
+	max-height: 140px;
+	resize: vertical;
+}
+
+.aiwoo-send,
+.aiwoo-enquiry-form button {
+	align-self: end;
+	border: 0;
+	border-radius: 14px;
+	padding: 12px 16px;
+	background: var(--aiwoo-primary);
+	color: #fff;
+	font-weight: 700;
+	cursor: pointer;
+}
+
+.aiwoo-enquiry {
+	padding: 12px;
+	border-radius: 18px;
+	background: #fff;
+	border: 1px solid rgba(16, 42, 67, 0.08);
+}
+
+.aiwoo-enquiry-form {
+	display: grid;
+	gap: 10px;
+}
+
+@media (max-width: 640px) {
+	.aiwoo-widget {
+		right: 12px;
+		bottom: 12px;
+		left: 12px;
+	}
+
+	.aiwoo-launcher {
+		margin-left: auto;
+	}
+
+	.aiwoo-panel {
+		right: 0;
+		left: 0;
+		width: 100%;
+		height: min(72vh, 560px);
+	}
+
+	.aiwoo-form {
+		grid-template-columns: 1fr;
+	}
+}
