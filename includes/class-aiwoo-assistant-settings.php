@@ -27,6 +27,32 @@ final class Settings {
 		'chat_icon'            => '',
 		'max_context_products' => 4,
 		'temperature'          => 0.4,
+		// Claude (Anthropic)
+		'claude_api_key'          => '',
+		'claude_model'            => 'claude-sonnet-4-6',
+		// Gemini (Google)
+		'gemini_api_key'          => '',
+		'gemini_model'            => 'gemini-2.0-flash',
+		// Input limits
+		'max_message_length'      => 200,
+		// Colour overrides — empty string = use CSS variable default
+		'color_primary_hover'     => '',
+		'color_surface'           => '',
+		'color_bg'                => '',
+		'color_border'            => '',
+		'color_text'              => '',
+		'color_text_soft'         => '',
+		'color_header_bg'         => '',
+		'color_header_text'       => '',
+		'color_user_bubble_bg'    => '',
+		'color_user_bubble_text'  => '',
+		'color_agent_bubble_bg'   => '',
+		'color_agent_bubble_text' => '',
+		'color_send_bg'           => '',
+		'color_send_text'         => '',
+		'color_send_hover_bg'     => '',
+		'color_input_bg'          => '',
+		'color_input_text'        => '',
 	);
 
 	public function __construct() {
@@ -112,10 +138,24 @@ final class Settings {
 		$input    = is_array( $input ) ? $input : array();
 		$settings = $this->all();
 
-		$settings['enabled']              = ! empty( $input['enabled'] ) ? 'yes' : 'no';
-		$settings['provider']             = 'openai';
+		$settings['enabled']  = ! empty( $input['enabled'] ) ? 'yes' : 'no';
+
+		$allowed_providers    = array( 'openai', 'claude', 'gemini' );
+		$settings['provider'] = isset( $input['provider'] ) && in_array( $input['provider'], $allowed_providers, true )
+			? $input['provider']
+			: 'openai';
+
+		// OpenAI
 		$settings['openai_api_key']       = isset( $input['openai_api_key'] ) ? sanitize_text_field( wp_unslash( $input['openai_api_key'] ) ) : '';
 		$settings['openai_model']         = isset( $input['openai_model'] ) ? $this->normalize_openai_model( wp_unslash( $input['openai_model'] ) ) : $this->defaults['openai_model'];
+
+		// Claude
+		$settings['claude_api_key'] = isset( $input['claude_api_key'] ) ? sanitize_text_field( wp_unslash( $input['claude_api_key'] ) ) : '';
+		$settings['claude_model']   = isset( $input['claude_model'] ) ? $this->normalize_claude_model( wp_unslash( $input['claude_model'] ) ) : $this->defaults['claude_model'];
+
+		// Gemini
+		$settings['gemini_api_key'] = isset( $input['gemini_api_key'] ) ? sanitize_text_field( wp_unslash( $input['gemini_api_key'] ) ) : '';
+		$settings['gemini_model']   = isset( $input['gemini_model'] ) ? $this->normalize_gemini_model( wp_unslash( $input['gemini_model'] ) ) : $this->defaults['gemini_model'];
 		$settings['system_prompt']        = isset( $input['system_prompt'] ) ? sanitize_textarea_field( wp_unslash( $input['system_prompt'] ) ) : '';
 		$settings['welcome_message']      = isset( $input['welcome_message'] ) ? sanitize_textarea_field( wp_unslash( $input['welcome_message'] ) ) : $this->defaults['welcome_message'];
 		$settings['panel_title']          = isset( $input['panel_title'] ) ? sanitize_text_field( wp_unslash( $input['panel_title'] ) ) : '';
@@ -129,6 +169,24 @@ final class Settings {
 
 		if ( empty( $settings['primary_color'] ) ) {
 			$settings['primary_color'] = $this->defaults['primary_color'];
+		}
+
+		$settings['max_message_length'] = isset( $input['max_message_length'] )
+			? max( 10, min( 1000, absint( $input['max_message_length'] ) ) )
+			: $this->defaults['max_message_length'];
+
+		$color_keys = array(
+			'color_primary_hover', 'color_surface', 'color_bg', 'color_border',
+			'color_text', 'color_text_soft', 'color_header_bg', 'color_header_text',
+			'color_user_bubble_bg', 'color_user_bubble_text', 'color_agent_bubble_bg',
+			'color_agent_bubble_text', 'color_send_bg', 'color_send_text',
+			'color_send_hover_bg', 'color_input_bg', 'color_input_text',
+		);
+
+		foreach ( $color_keys as $key ) {
+			$settings[ $key ] = isset( $input[ $key ] )
+				? ( sanitize_hex_color( $input[ $key ] ) ?? '' )
+				: '';
 		}
 
 		return $settings;
@@ -164,9 +222,56 @@ final class Settings {
 			case 'provider':
 				?>
 				<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>">
-					<option value="openai" <?php selected( 'openai', $value ); ?>><?php esc_html_e( 'OpenAI', 'ai-woocommerce-assistant' ); ?></option>
+					<option value="openai"  <?php selected( 'openai',  $value ); ?>><?php esc_html_e( 'OpenAI',           'ai-woocommerce-assistant' ); ?></option>
+					<option value="claude"  <?php selected( 'claude',  $value ); ?>><?php esc_html_e( 'Claude (Anthropic)', 'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini"  <?php selected( 'gemini',  $value ); ?>><?php esc_html_e( 'Gemini (Google)',    'ai-woocommerce-assistant' ); ?></option>
 				</select>
-				<p class="description"><?php esc_html_e( 'The architecture is modular for future providers, but only OpenAI is enabled in this release.', 'ai-woocommerce-assistant' ); ?></p>
+				<p class="description"><?php esc_html_e( 'Select the AI provider. Enter the corresponding API key in the fields below.', 'ai-woocommerce-assistant' ); ?></p>
+				<?php
+				break;
+
+			case 'claude_api_key':
+				printf(
+					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="%3$s" autocomplete="off" />',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value )
+				);
+				echo '<p class="description"><a href="https://console.anthropic.com/account/keys" target="_blank" rel="noopener">'
+					. esc_html__( 'Get your Anthropic API key →', 'ai-woocommerce-assistant' )
+					. '</a></p>';
+				break;
+
+			case 'claude_model':
+				?>
+				<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>">
+					<option value="claude-sonnet-4-6"          <?php selected( 'claude-sonnet-4-6',          $value ); ?>><?php esc_html_e( 'Claude Sonnet 4.6 (recommended)', 'ai-woocommerce-assistant' ); ?></option>
+					<option value="claude-opus-4-6"            <?php selected( 'claude-opus-4-6',            $value ); ?>><?php esc_html_e( 'Claude Opus 4.6 (most capable)',   'ai-woocommerce-assistant' ); ?></option>
+					<option value="claude-haiku-4-5-20251001"  <?php selected( 'claude-haiku-4-5-20251001',  $value ); ?>><?php esc_html_e( 'Claude Haiku 4.5 (fastest)',      'ai-woocommerce-assistant' ); ?></option>
+				</select>
+				<?php
+				break;
+
+			case 'gemini_api_key':
+				printf(
+					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="%3$s" autocomplete="off" />',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value )
+				);
+				echo '<p class="description"><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">'
+					. esc_html__( 'Get your Google AI Studio API key →', 'ai-woocommerce-assistant' )
+					. '</a></p>';
+				break;
+
+			case 'gemini_model':
+				?>
+				<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>">
+					<option value="gemini-2.0-flash"      <?php selected( 'gemini-2.0-flash',      $value ); ?>><?php esc_html_e( 'Gemini 2.0 Flash (recommended)', 'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-2.0-flash-lite" <?php selected( 'gemini-2.0-flash-lite', $value ); ?>><?php esc_html_e( 'Gemini 2.0 Flash-Lite (fastest)', 'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-1.5-pro"        <?php selected( 'gemini-1.5-pro',        $value ); ?>><?php esc_html_e( 'Gemini 1.5 Pro',                 'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-1.5-flash"      <?php selected( 'gemini-1.5-flash',      $value ); ?>><?php esc_html_e( 'Gemini 1.5 Flash',               'ai-woocommerce-assistant' ); ?></option>
+				</select>
 				<?php
 				break;
 
@@ -291,10 +396,58 @@ final class Settings {
 					esc_textarea( (string) $value )
 				);
 				break;
+
+			case 'max_message_length':
+				printf(
+					'<input type="number" min="10" max="1000" id="%1$s" name="%2$s" value="%3$s" />',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value )
+				);
+				echo '<p class="description">' . esc_html__( 'Characters allowed per chat message (10–1000). Requests exceeding this limit will be auto-blocked by IP.', 'ai-woocommerce-assistant' ) . '</p>';
+				break;
+
+			default:
+				// Generic colour field — handles all color_* keys.
+				if ( str_starts_with( $key, 'color_' ) ) {
+					$placeholder_map = array(
+						'color_primary_hover'     => '#7d1125',
+						'color_surface'           => '#ffffff',
+						'color_bg'                => '#f7f7f7',
+						'color_border'            => '#e0e0e0',
+						'color_text'              => '#111111',
+						'color_text_soft'         => '#666666',
+						'color_header_bg'         => __( '(same as accent)', 'ai-woocommerce-assistant' ),
+						'color_header_text'       => '#ffffff',
+						'color_user_bubble_bg'    => __( '(same as accent)', 'ai-woocommerce-assistant' ),
+						'color_user_bubble_text'  => '#ffffff',
+						'color_agent_bubble_bg'   => '#f0f0f0',
+						'color_agent_bubble_text' => '#111111',
+						'color_send_bg'           => __( '(same as accent)', 'ai-woocommerce-assistant' ),
+						'color_send_text'         => '#ffffff',
+						'color_send_hover_bg'     => __( '(same as accent hover)', 'ai-woocommerce-assistant' ),
+						'color_input_bg'          => '#ffffff',
+						'color_input_text'        => '#111111',
+					);
+
+					$default_hint = $placeholder_map[ $key ] ?? '';
+					printf(
+						'<input type="text" class="aiwoo-color-field" id="%1$s" name="%2$s" value="%3$s" data-default-color="%4$s" />',
+						esc_attr( $field_id ),
+						esc_attr( $name ),
+						esc_attr( (string) $value ),
+						esc_attr( str_starts_with( $default_hint, '#' ) ? $default_hint : '' )
+					);
+					if ( '' !== $default_hint && ! str_starts_with( $default_hint, '#' ) ) {
+						echo '<p class="description">' . esc_html__( 'Default:', 'ai-woocommerce-assistant' ) . ' ' . esc_html( $default_hint ) . '</p>';
+					}
+				}
+				break;
 		}
 	}
 
 	public function render_settings_page() {
+		$settings = $this; // Available as $settings inside the template.
 		require AI_WOO_ASSISTANT_PATH . 'admin/settings-page.php';
 	}
 
@@ -304,6 +457,29 @@ final class Settings {
 			'gpt-5.4',
 			'gpt-4.1-mini',
 		);
+	}
+
+	private function normalize_claude_model( $model ) {
+		$model     = sanitize_text_field( (string) $model );
+		$supported = array(
+			'claude-opus-4-6',
+			'claude-sonnet-4-6',
+			'claude-haiku-4-5-20251001',
+		);
+
+		return in_array( $model, $supported, true ) ? $model : $this->defaults['claude_model'];
+	}
+
+	private function normalize_gemini_model( $model ) {
+		$model     = sanitize_text_field( (string) $model );
+		$supported = array(
+			'gemini-2.0-flash',
+			'gemini-2.0-flash-lite',
+			'gemini-1.5-pro',
+			'gemini-1.5-flash',
+		);
+
+		return in_array( $model, $supported, true ) ? $model : $this->defaults['gemini_model'];
 	}
 
 	private function normalize_openai_model( $model ) {

@@ -16,10 +16,13 @@ final class Ajax_Controller {
 
 	private $chat_logger;
 
-	public function __construct( Settings $settings, Chat_Service $chat_service, Chat_Logger $chat_logger ) {
+	private $ip_blocker;
+
+	public function __construct( Settings $settings, Chat_Service $chat_service, Chat_Logger $chat_logger, IP_Blocker $ip_blocker ) {
 		$this->settings     = $settings;
 		$this->chat_service = $chat_service;
 		$this->chat_logger  = $chat_logger;
+		$this->ip_blocker   = $ip_blocker;
 
 		add_action( 'wp_ajax_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
 		add_action( 'wp_ajax_nopriv_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
@@ -32,6 +35,15 @@ final class Ajax_Controller {
 			wp_send_json_error(
 				array(
 					'message' => __( 'The assistant is disabled.', 'ai-woocommerce-assistant' ),
+				),
+				403
+			);
+		}
+
+		if ( $this->ip_blocker->is_blocked( IP_Blocker::get_visitor_ip() ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Not available.', 'ai-woocommerce-assistant' ),
 				),
 				403
 			);
@@ -62,10 +74,28 @@ final class Ajax_Controller {
 		$raw_history      = isset( $_POST['history'] ) ? wp_unslash( $_POST['history'] ) : '';
 		$raw_page_context = isset( $_POST['pageContext'] ) ? wp_unslash( $_POST['pageContext'] ) : '';
 
-		if ( strlen( (string) $raw_message ) > 2000 || strlen( (string) $raw_history ) > 8000 || strlen( (string) $raw_page_context ) > 4000 ) {
+		// Reject oversized history / page-context payloads.
+		if ( strlen( (string) $raw_history ) > 8000 || strlen( (string) $raw_page_context ) > 4000 ) {
 			wp_send_json_error(
 				array(
 					'message' => __( 'Your message is too large. Please shorten it and try again.', 'ai-woocommerce-assistant' ),
+				),
+				413
+			);
+		}
+
+		// Enforce configurable message length limit.
+		// A message exceeding the limit is characteristic of automated/bot traffic —
+		// auto-block the IP to protect token budget.
+		$max_message_length = max( 10, (int) $this->settings->get( 'max_message_length' ) );
+		if ( strlen( (string) $raw_message ) > $max_message_length ) {
+			$visitor_ip = IP_Blocker::get_visitor_ip();
+			if ( '' !== $visitor_ip ) {
+				$this->ip_blocker->add( $visitor_ip ); // silently no-ops on duplicates / limit reached
+			}
+			wp_send_json_error(
+				array(
+					'message' => __( 'Not available.', 'ai-woocommerce-assistant' ),
 				),
 				413
 			);
@@ -112,6 +142,15 @@ final class Ajax_Controller {
 			wp_send_json_error(
 				array(
 					'message' => __( 'The assistant is disabled.', 'ai-woocommerce-assistant' ),
+				),
+				403
+			);
+		}
+
+		if ( $this->ip_blocker->is_blocked( IP_Blocker::get_visitor_ip() ) ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Not available.', 'ai-woocommerce-assistant' ),
 				),
 				403
 			);

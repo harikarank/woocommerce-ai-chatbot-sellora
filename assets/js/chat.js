@@ -245,8 +245,26 @@
 		}
 	}
 
+	// ── Character counter ────────────────────────────────────────────────────
+	const maxLen = ( config.settings && config.settings.maxMessageLength ) || 200;
+	elements.input.setAttribute( 'maxlength', String( maxLen ) );
+
+	const counter = document.createElement( 'div' );
+	counter.className = 'aiwoo-char-counter';
+	counter.setAttribute( 'aria-live', 'polite' );
+	counter.setAttribute( 'aria-atomic', 'true' );
+	elements.form.parentNode.insertBefore( counter, elements.form );
+
+	function updateCounter() {
+		const used      = elements.input.value.length;
+		const remaining = maxLen - used;
+		counter.textContent = remaining + ' / ' + maxLen;
+		const nearLimit = remaining <= Math.max( 20, Math.floor( maxLen * 0.15 ) );
+		counter.classList.toggle( 'is-near-limit', nearLimit && remaining > 0 );
+		counter.classList.toggle( 'is-at-limit', remaining <= 0 );
+	}
+
 	loadState();
-	root.style.setProperty( '--aiwoo-primary', config.ui.primaryColor || '#9a162d' );
 	renderMessages();
 	setLoading( false );
 	setOpen( state.isOpen );
@@ -267,7 +285,10 @@
 		handleSend( value );
 	} );
 
-	elements.input.addEventListener( 'input', adjustTextareaHeight );
+	elements.input.addEventListener( 'input', function () {
+		adjustTextareaHeight();
+		updateCounter();
+	} );
 
 	elements.input.addEventListener( 'keydown', function ( event ) {
 		if ( event.key === 'Enter' && ! event.shiftKey ) {
@@ -277,4 +298,5 @@
 	} );
 
 	adjustTextareaHeight();
+	updateCounter();
 }() );

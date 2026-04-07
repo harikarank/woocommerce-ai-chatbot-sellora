@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-ip-blocker.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/admin/ip-blocklist-page.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-admin-menu.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-ajax-controller.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-plugin.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-settings.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/admin/settings-page.php\")",
+      "Bash(node --check \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/assets/js/chat.js\")",
+      "Bash(node --check \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/assets/js/admin.js\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-claude-provider.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-gemini-provider.php\")",
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/api-handler.php\")"
+    ]
+  }
+}

@@ -1,21 +1,51 @@
 /* ==========================================================================
    SELLORA AI — Premium Chat Widget
-   Color system : #9a162d (primary) · #ffffff · #000000
-   Design rule  : zero border-radius — sharp, boxy, editorial
+   Design rule : zero hard-coded colours — everything flows from CSS vars
    ========================================================================== */
 
-/* ── CSS custom properties ─────────────────────────────────────────────── */
+/* ── CSS custom properties ─────────────────────────────────────────────────
+   Base palette — overridden per-site via wp_add_inline_style
+   ─────────────────────────────────────────────────────────────────────────── */
 .aiwoo-widget {
+	/* Accent */
 	--aiwoo-primary:       #9a162d;
 	--aiwoo-primary-dark:  #7d1125;
 	--aiwoo-primary-deep:  #650e1d;
+
+	/* Layout surfaces */
 	--aiwoo-surface:       #ffffff;
 	--aiwoo-bg:            #f7f7f7;
 	--aiwoo-border:        #e0e0e0;
+
+	/* Typography */
 	--aiwoo-copy:          #111111;
 	--aiwoo-copy-soft:     #666666;
+
+	/* Header */
+	--aiwoo-header-bg:          var(--aiwoo-primary);
+	--aiwoo-header-text:        #ffffff;
+
+	/* User message bubble */
+	--aiwoo-user-bubble-bg:     var(--aiwoo-primary);
+	--aiwoo-user-bubble-text:   #ffffff;
+
+	/* Agent message bubble */
+	--aiwoo-agent-bubble-bg:    #f0f0f0;
+	--aiwoo-agent-bubble-text:  var(--aiwoo-copy);
+
+	/* Send button */
+	--aiwoo-send-bg:            var(--aiwoo-primary);
+	--aiwoo-send-text:          #ffffff;
+	--aiwoo-send-hover-bg:      var(--aiwoo-primary-dark);
+
+	/* Input */
+	--aiwoo-input-bg:           var(--aiwoo-surface);
+	--aiwoo-input-text:         var(--aiwoo-copy);
+
+	/* Shadow */
 	--aiwoo-shadow-lift:   4px 4px 0 rgba(0, 0, 0, 0.25);
 	--aiwoo-shadow-panel:  10px 10px 0 rgba(0, 0, 0, 0.18);
+
 	position: fixed;
 	right: 24px;
 	bottom: 24px;
@@ -23,7 +53,7 @@
 	font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
-/* ── Launcher button — circle ───────────────────────────────────────────── */
+/* ── Launcher button ────────────────────────────────────────────────────── */
 .aiwoo-launcher {
 	display: inline-flex;
 	align-items: center;
@@ -34,8 +64,8 @@
 	border: none;
 	border-radius: 50%;
 	background: var(--aiwoo-primary);
-	color: #fff;
-	box-shadow: 0 4px 16px rgba(154, 22, 45, 0.45), 0 2px 4px rgba(0, 0, 0, 0.2);
+	color: var(--aiwoo-send-text);
+	box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
 	cursor: pointer;
 	transition:
 		background  0.15s ease,
@@ -45,12 +75,12 @@
 
 .aiwoo-launcher:hover {
 	background: var(--aiwoo-primary-dark);
-	box-shadow: 0 6px 20px rgba(154, 22, 45, 0.55), 0 2px 6px rgba(0, 0, 0, 0.2);
+	box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .aiwoo-launcher:active {
 	transform: scale(0.94);
-	box-shadow: 0 2px 8px rgba(154, 22, 45, 0.4);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .aiwoo-launcher__icon {
@@ -59,7 +89,6 @@
 	object-fit: contain;
 }
 
-/* Default icon when no custom image is set */
 .aiwoo-launcher__dot {
 	width: 9px;
 	height: 9px;
@@ -86,7 +115,6 @@
 	display: flex;
 	flex-direction: column;
 	overflow: hidden;
-	/* entrance animation — closed state */
 	opacity: 0;
 	transform: translateY(14px);
 	pointer-events: none;
@@ -105,7 +133,7 @@
 	align-items: center;
 	gap: 10px;
 	padding: 13px 16px;
-	background: var(--aiwoo-primary);
+	background: var(--aiwoo-header-bg);
 	border-bottom: 3px solid var(--aiwoo-primary-dark);
 	flex-shrink: 0;
 }
@@ -119,7 +147,6 @@
 	overflow: hidden;
 }
 
-/* Company logo — circle */
 .aiwoo-panel__logo {
 	flex-shrink: 0;
 	width: 40px;
@@ -136,7 +163,7 @@
 }
 
 .aiwoo-panel__header h2 {
-	color: #fff;
+	color: var(--aiwoo-header-text);
 	font-size: 14px;
 	font-weight: 700;
 	letter-spacing: 0.01em;
@@ -147,7 +174,8 @@
 
 .aiwoo-panel__header p {
 	margin-top: 2px;
-	color: rgba(255, 255, 255, 0.65);
+	color: var(--aiwoo-header-text);
+	opacity: 0.72;
 	font-size: 11px;
 	white-space: nowrap;
 	overflow: hidden;
@@ -157,23 +185,22 @@
 	gap: 5px;
 }
 
-/* Online status dot */
 .aiwoo-panel__online {
 	display: inline-block;
 	flex-shrink: 0;
 	width: 6px;
 	height: 6px;
 	background: #22c55e;
+	opacity: 1; /* override parent opacity via stacking context */
 }
 
-/* Close button */
 .aiwoo-close {
 	flex-shrink: 0;
 	width: 30px;
 	height: 30px;
 	border: 1px solid rgba(255, 255, 255, 0.3);
 	background: transparent;
-	color: #fff;
+	color: var(--aiwoo-header-text);
 	font-size: 18px;
 	line-height: 1;
 	cursor: pointer;
@@ -215,7 +242,6 @@
 	flex-shrink: 0;
 }
 
-/* Animated bar-style typing indicator (replaces round dots) */
 .aiwoo-loading__dot {
 	width: 3px;
 	height: 16px;
@@ -256,7 +282,7 @@
 .aiwoo-message-row--assistant { align-self: flex-start; flex-direction: row; }
 .aiwoo-message-row--user      { align-self: flex-end;   flex-direction: row; }
 
-/* ── Avatars — circle ───────────────────────────────────────────────────── */
+/* ── Avatars ────────────────────────────────────────────────────────────── */
 .aiwoo-avatar {
 	flex-shrink: 0;
 	width: 30px;
@@ -277,19 +303,15 @@
 	display: block;
 }
 
-.aiwoo-avatar--user { color: #fff; }
-
-.aiwoo-avatar--user svg {
-	width: 15px;
-	height: 15px;
-}
+.aiwoo-avatar--user       { color: var(--aiwoo-user-bubble-text); }
+.aiwoo-avatar--user svg   { width: 15px; height: 15px; }
 
 .aiwoo-avatar--employee {
 	background: #ebebeb;
 	border: 1.5px solid #ddd;
 }
 
-/* ── Message bubbles — curved + tail toward avatar ──────────────────────── */
+/* ── Message bubbles ────────────────────────────────────────────────────── */
 .aiwoo-message {
 	position: relative;
 	max-width: calc(84% - 35px);
@@ -301,16 +323,14 @@
 .aiwoo-message p            { margin: 0 0 7px; }
 .aiwoo-message p:last-child { margin-bottom: 0; }
 
-/* ── Assistant bubble — light gray, curved, left tail ── */
+/* Agent bubble — left tail */
 .aiwoo-message--assistant {
-	background: #f0f0f0;
-	color: var(--aiwoo-copy);
-	/* flat bottom-left corner — tail starts here */
+	background: var(--aiwoo-agent-bubble-bg);
+	color: var(--aiwoo-agent-bubble-text);
 	border-radius: 14px 14px 14px 4px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* Tail pointing left toward assistant avatar */
 .aiwoo-message--assistant::before {
 	content: '';
 	position: absolute;
@@ -320,19 +340,17 @@
 	height: 0;
 	border-style: solid;
 	border-width: 6px 8px 6px 0;
-	border-color: transparent #f0f0f0 transparent transparent;
+	border-color: transparent var(--aiwoo-agent-bubble-bg) transparent transparent;
 }
 
-/* ── User bubble — primary red, curved, right tail ── */
+/* User bubble — right tail */
 .aiwoo-message--user {
-	background: var(--aiwoo-primary);
-	color: #fff;
-	/* flat bottom-right corner — tail starts here */
+	background: var(--aiwoo-user-bubble-bg);
+	color: var(--aiwoo-user-bubble-text);
 	border-radius: 14px 14px 4px 14px;
-	box-shadow: 0 1px 4px rgba(154, 22, 45, 0.35);
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
-/* Tail pointing right toward user avatar */
 .aiwoo-message--user::before {
 	content: '';
 	position: absolute;
@@ -342,10 +360,10 @@
 	height: 0;
 	border-style: solid;
 	border-width: 6px 0 6px 8px;
-	border-color: transparent transparent transparent var(--aiwoo-primary);
+	border-color: transparent transparent transparent var(--aiwoo-user-bubble-bg);
 }
 
-/* ── Product recommendation cards ───────────────────────────────────────── */
+/* ── Product cards ──────────────────────────────────────────────────────── */
 .aiwoo-product-list {
 	display: grid;
 	gap: 7px;
@@ -365,21 +383,12 @@
 }
 
 .aiwoo-product-card:hover {
-	background: #fdf3f5;
+	background: var(--aiwoo-bg);
 	border-left-color: var(--aiwoo-primary-dark);
 }
 
-.aiwoo-product-card__title {
-	font-size: 13px;
-	font-weight: 700;
-	color: var(--aiwoo-copy);
-}
-
-.aiwoo-product-card__price {
-	font-size: 13px;
-	font-weight: 700;
-	color: var(--aiwoo-primary);
-}
+.aiwoo-product-card__title { font-size: 13px; font-weight: 700; color: var(--aiwoo-copy); }
+.aiwoo-product-card__price { font-size: 13px; font-weight: 700; color: var(--aiwoo-primary); }
 
 .aiwoo-product-card__stock {
 	font-size: 10.5px;
@@ -396,7 +405,25 @@
 	line-height: 1.45;
 }
 
-/* ── Input / send form ──────────────────────────────────────────────────── */
+/* ── Character counter ──────────────────────────────────────────────────── */
+.aiwoo-char-counter {
+	display: flex;
+	justify-content: flex-end;
+	padding: 3px 10px 3px;
+	font-size: 10.5px;
+	line-height: 1;
+	color: var(--aiwoo-copy-soft);
+	background: var(--aiwoo-surface);
+	border-top: 1px solid var(--aiwoo-border);
+	flex-shrink: 0;
+	transition: color 0.15s;
+	user-select: none;
+}
+
+.aiwoo-char-counter.is-near-limit { color: #d97706; }
+.aiwoo-char-counter.is-at-limit   { color: #dc2626; font-weight: 700; }
+
+/* ── Input form ─────────────────────────────────────────────────────────── */
 .aiwoo-form {
 	display: grid;
 	grid-template-columns: 1fr auto;
@@ -413,8 +440,8 @@
 	padding: 14px 15px;
 	font: inherit;
 	font-size: 13.5px;
-	color: var(--aiwoo-copy);
-	background: var(--aiwoo-surface);
+	color: var(--aiwoo-input-text);
+	background: var(--aiwoo-input-bg);
 	resize: none;
 	outline: none;
 	transition: border-right-color 0.15s;
@@ -433,8 +460,8 @@
 	align-self: stretch;
 	border: none;
 	padding: 0 18px;
-	background: var(--aiwoo-primary);
-	color: #fff;
+	background: var(--aiwoo-send-bg);
+	color: var(--aiwoo-send-text);
 	font: 700 12.5px/1 inherit;
 	letter-spacing: 0.06em;
 	text-transform: uppercase;
@@ -446,11 +473,10 @@
 	transition: background 0.15s ease;
 }
 
-.aiwoo-send:hover    { background: var(--aiwoo-primary-dark); }
+.aiwoo-send:hover    { background: var(--aiwoo-send-hover-bg); }
 .aiwoo-send:active   { background: var(--aiwoo-primary-deep); }
 .aiwoo-send:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.aiwoo-send svg { flex-shrink: 0; }
+.aiwoo-send svg      { flex-shrink: 0; }
 
 /* ── Enquiry form ───────────────────────────────────────────────────────── */
 .aiwoo-enquiry {
@@ -467,10 +493,7 @@
 	line-height: 1.5;
 }
 
-.aiwoo-enquiry-form {
-	display: grid;
-	gap: 8px;
-}
+.aiwoo-enquiry-form { display: grid; gap: 8px; }
 
 .aiwoo-enquiry-form input,
 .aiwoo-enquiry-form textarea {
@@ -494,8 +517,8 @@
 .aiwoo-enquiry-form button {
 	border: none;
 	padding: 12px 20px;
-	background: var(--aiwoo-primary);
-	color: #fff;
+	background: var(--aiwoo-send-bg);
+	color: var(--aiwoo-send-text);
 	font: 700 13px/1 inherit;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
@@ -503,9 +526,9 @@
 	transition: background 0.15s;
 }
 
-.aiwoo-enquiry-form button:hover { background: var(--aiwoo-primary-dark); }
+.aiwoo-enquiry-form button:hover { background: var(--aiwoo-send-hover-bg); }
 
-/* ── Responsive (mobile) ────────────────────────────────────────────────── */
+/* ── Responsive ─────────────────────────────────────────────────────────── */
 @media (max-width: 640px) {
 	.aiwoo-widget {
 		right: 12px;

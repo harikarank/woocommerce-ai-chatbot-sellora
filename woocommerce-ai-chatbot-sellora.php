@@ -24,6 +24,7 @@ define( 'AI_WOO_ASSISTANT_URL', plugin_dir_url( __FILE__ ) );
 
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-settings.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-chat-logger.php';
+require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-ip-blocker.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-admin-menu.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/woocommerce-handler.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/api-handler.php';

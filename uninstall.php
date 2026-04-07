@@ -10,6 +10,9 @@ defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 // Remove plugin settings.
 delete_option( 'ai_woo_assistant_settings' );
 
+// Remove IP blocklist.
+delete_option( 'aiwoo_blocked_ips' );
+
 // Remove DB version flag.
 delete_option( 'aiwoo_db_version' );
 

@@ -1,6 +1,6 @@
 <?php
 /**
- * API bootstrap and AJAX handler loading.
+ * API bootstrap — loads provider classes and exposes factory helpers.
  *
  * @package AIWooAssistant
  */
@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit;
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-provider-interface.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-openai-provider.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-claude-provider.php';
+require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-gemini-provider.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-chat-service.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-ajax-controller.php';
 
@@ -27,7 +28,10 @@ function make_ai_provider( $settings = null ) {
 
 	switch ( $provider ) {
 		case 'claude':
-			return new Claude_Provider();
+			return new Claude_Provider( $settings );
+
+		case 'gemini':
+			return new Gemini_Provider( $settings );
 
 		case 'openai':
 		default:
@@ -39,7 +43,7 @@ function make_ai_provider( $settings = null ) {
  * Call the configured AI model.
  *
  * @param string               $message User or prompt message.
- * @param array<string, mixed> $context Additional context including instructions.
+ * @param array<string, mixed> $context Additional context including instructions and settings.
  * @return string
  * @throws \Exception When provider request fails.
  */

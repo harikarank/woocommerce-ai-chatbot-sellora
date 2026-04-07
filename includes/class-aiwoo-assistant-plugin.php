@@ -20,6 +20,8 @@ final class Plugin {
 
 	private $chat_logger;
 
+	private $ip_blocker;
+
 	private $ajax_controller;
 
 	private $admin_menu;
@@ -39,8 +41,9 @@ final class Plugin {
 		$this->catalog_service = new Catalog_Service( $this->settings );
 		$this->chat_service    = new Chat_Service( $this->settings, $this->catalog_service );
 		$this->chat_logger     = new Chat_Logger();
-		$this->ajax_controller = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger );
-		$this->admin_menu      = new Admin_Menu( $this->settings, $this->chat_logger );
+		$this->ip_blocker      = new IP_Blocker();
+		$this->ajax_controller = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger, $this->ip_blocker );
+		$this->admin_menu      = new Admin_Menu( $this->settings, $this->chat_logger, $this->ip_blocker );
 
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'before_woocommerce_init', array( $this, 'declare_wc_compatibility' ) );
@@ -103,6 +106,10 @@ final class Plugin {
 			return;
 		}
 
+		if ( $this->ip_blocker->is_blocked( IP_Blocker::get_visitor_ip() ) ) {
+			return;
+		}
+
 		wp_register_style(
 			'ai-woo-assistant-widget',
 			AI_WOO_ASSISTANT_URL . 'assets/css/style.css',
@@ -120,6 +127,12 @@ final class Plugin {
 
 		wp_enqueue_style( 'ai-woo-assistant-widget' );
 		wp_enqueue_script( 'ai-woo-assistant-widget' );
+
+		// Inject per-site CSS variable overrides as inline style.
+		$color_css = $this->build_color_css();
+		if ( '' !== $color_css ) {
+			wp_add_inline_style( 'ai-woo-assistant-widget', $color_css );
+		}
 
 		wp_localize_script(
 			'ai-woo-assistant-widget',
@@ -164,6 +177,9 @@ final class Plugin {
 					'hasWooCommerce' => class_exists( 'WooCommerce' ),
 				),
 				'widgetStateKey' => 'ai_woo_assistant_widget_state',
+				'settings'       => array(
+					'maxMessageLength' => max( 10, (int) $this->settings->get( 'max_message_length' ) ),
+				),
 			)
 		);
 	}
@@ -184,8 +200,56 @@ final class Plugin {
 		);
 	}
 
+	/**
+	 * Build a CSS block that overrides the widget's CSS custom properties
+	 * with admin-configured colour values. Only variables that have been
+	 * explicitly set are included — unset ones fall back to the stylesheet
+	 * defaults automatically.
+	 */
+	private function build_color_css() {
+		$primary = sanitize_hex_color( (string) $this->settings->get( 'primary_color' ) );
+		if ( empty( $primary ) ) {
+			$primary = '#9a162d';
+		}
+
+		$vars = array( '--aiwoo-primary:' . $primary );
+
+		$map = array(
+			'color_primary_hover'     => '--aiwoo-primary-dark',
+			'color_surface'           => '--aiwoo-surface',
+			'color_bg'                => '--aiwoo-bg',
+			'color_border'            => '--aiwoo-border',
+			'color_text'              => '--aiwoo-copy',
+			'color_text_soft'         => '--aiwoo-copy-soft',
+			'color_header_bg'         => '--aiwoo-header-bg',
+			'color_header_text'       => '--aiwoo-header-text',
+			'color_user_bubble_bg'    => '--aiwoo-user-bubble-bg',
+			'color_user_bubble_text'  => '--aiwoo-user-bubble-text',
+			'color_agent_bubble_bg'   => '--aiwoo-agent-bubble-bg',
+			'color_agent_bubble_text' => '--aiwoo-agent-bubble-text',
+			'color_send_bg'           => '--aiwoo-send-bg',
+			'color_send_text'         => '--aiwoo-send-text',
+			'color_send_hover_bg'     => '--aiwoo-send-hover-bg',
+			'color_input_bg'          => '--aiwoo-input-bg',
+			'color_input_text'        => '--aiwoo-input-text',
+		);
+
+		foreach ( $map as $setting_key => $css_var ) {
+			$value = sanitize_hex_color( (string) $this->settings->get( $setting_key ) );
+			if ( ! empty( $value ) ) {
+				$vars[] = $css_var . ':' . $value;
+			}
+		}
+
+		return '.aiwoo-widget{' . implode( ';', $vars ) . '}';
+	}
+
 	public function render_widget_template() {
 		if ( is_admin() || ! $this->settings->is_enabled() ) {
+			return;
+		}
+
+		if ( $this->ip_blocker->is_blocked( IP_Blocker::get_visitor_ip() ) ) {
 			return;
 		}
 

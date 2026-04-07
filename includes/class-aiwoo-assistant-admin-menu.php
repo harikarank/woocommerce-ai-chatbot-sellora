@@ -17,14 +17,19 @@ final class Admin_Menu {
 	/** @var Chat_Logger */
 	private $chat_logger;
 
+	/** @var IP_Blocker */
+	private $ip_blocker;
+
 	/** Hook suffixes returned by add_submenu_page — used for asset enqueueing. */
 	private $hook_chat_history = '';
 	private $hook_enquiries    = '';
+	private $hook_ip_blocklist = '';
 	private $hook_settings     = '';
 
-	public function __construct( Settings $settings, Chat_Logger $chat_logger ) {
+	public function __construct( Settings $settings, Chat_Logger $chat_logger, IP_Blocker $ip_blocker ) {
 		$this->settings    = $settings;
 		$this->chat_logger = $chat_logger;
+		$this->ip_blocker  = $ip_blocker;
 
 		add_action( 'admin_menu', array( $this, 'register_menus' ) );
 	}
@@ -63,6 +68,15 @@ final class Admin_Menu {
 			array( $this, 'render_enquiries' )
 		);
 
+		$this->hook_ip_blocklist = (string) add_submenu_page(
+			'sellora-ai',
+			__( 'IP Blocklist', 'ai-woocommerce-assistant' ),
+			__( 'IP Blocklist', 'ai-woocommerce-assistant' ),
+			'manage_options',
+			'sellora-ai-ip-blocklist',
+			array( $this, 'render_ip_blocklist' )
+		);
+
 		$this->hook_settings = (string) add_submenu_page(
 			'sellora-ai',
 			__( 'Sellora AI Settings', 'ai-woocommerce-assistant' ),
@@ -82,7 +96,7 @@ final class Admin_Menu {
 	}
 
 	public function get_all_hooks() {
-		return array( $this->hook_chat_history, $this->hook_enquiries, $this->hook_settings );
+		return array( $this->hook_chat_history, $this->hook_enquiries, $this->hook_ip_blocklist, $this->hook_settings );
 	}
 
 	// -------------------------------------------------------------------------
@@ -118,6 +132,15 @@ final class Admin_Menu {
 		$sessions     = $this->chat_logger->get_sessions( $filters, $per_page, $offset );
 
 		require AI_WOO_ASSISTANT_PATH . 'admin/chat-history-page.php';
+	}
+
+	public function render_ip_blocklist() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view this page.', 'ai-woocommerce-assistant' ) );
+		}
+
+		$ip_blocker = $this->ip_blocker;
+		require AI_WOO_ASSISTANT_PATH . 'admin/ip-blocklist-page.php';
 	}
 
 	public function render_enquiries() {
