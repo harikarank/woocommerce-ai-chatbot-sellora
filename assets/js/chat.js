@@ -16,7 +16,17 @@
 		isOpen: false,
 	};
 
-	const storageKey = config.widgetStateKey || 'ai_woo_assistant_widget_state';
+	const storageKey  = config.widgetStateKey || 'ai_woo_assistant_widget_state';
+	const sessionKey  = 'aiwoo_session_id';
+
+	function getOrCreateSessionId() {
+		let id = window.sessionStorage.getItem( sessionKey );
+		if ( ! id ) {
+			id = 'aiwoo-' + Date.now().toString( 36 ) + '-' + Math.random().toString( 36 ).substring( 2, 10 );
+			window.sessionStorage.setItem( sessionKey, id );
+		}
+		return id;
+	}
 	const elements = {
 		root,
 		panel: root.querySelector( '.aiwoo-panel' ),
@@ -199,6 +209,7 @@
 		try {
 			const payload = await postAjax( config.actions.chat, {
 				message,
+				session_id: getOrCreateSessionId(),
 				history: JSON.stringify( state.messages.map( ( item ) => ( { role: item.role, content: item.content } ) ) ),
 				pageContext: JSON.stringify( config.storeContext ),
 			} );
@@ -225,6 +236,7 @@
 				phone: form.phone.value.trim(),
 				email: form.email.value.trim(),
 				message: form.message.value.trim(),
+				session_id: getOrCreateSessionId(),
 			} );
 			addMessage( 'assistant', payload.message );
 			form.closest( '.aiwoo-enquiry' )?.remove();
@@ -234,7 +246,7 @@
 	}
 
 	loadState();
-	root.style.setProperty( '--aiwoo-primary', config.ui.primaryColor || '#102a43' );
+	root.style.setProperty( '--aiwoo-primary', config.ui.primaryColor || '#9a162d' );
 	renderMessages();
 	setLoading( false );
 	setOpen( state.isOpen );

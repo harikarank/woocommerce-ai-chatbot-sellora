@@ -23,8 +23,12 @@ define( 'AI_WOO_ASSISTANT_PATH', plugin_dir_path( __FILE__ ) );
 define( 'AI_WOO_ASSISTANT_URL', plugin_dir_url( __FILE__ ) );
 
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-settings.php';
+require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-chat-logger.php';
+require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-admin-menu.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/woocommerce-handler.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/api-handler.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-plugin.php';
+
+register_activation_hook( AI_WOO_ASSISTANT_FILE, array( 'AIWooAssistant\Chat_Logger', 'create_table' ) );
 
 \AIWooAssistant\Plugin::instance();

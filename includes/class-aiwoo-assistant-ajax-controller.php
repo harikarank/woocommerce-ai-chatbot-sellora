@@ -14,9 +14,12 @@ final class Ajax_Controller {
 
 	private $chat_service;
 
-	public function __construct( Settings $settings, Chat_Service $chat_service ) {
+	private $chat_logger;
+
+	public function __construct( Settings $settings, Chat_Service $chat_service, Chat_Logger $chat_logger ) {
 		$this->settings     = $settings;
 		$this->chat_service = $chat_service;
+		$this->chat_logger  = $chat_logger;
 
 		add_action( 'wp_ajax_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
 		add_action( 'wp_ajax_nopriv_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
@@ -54,6 +57,7 @@ final class Ajax_Controller {
 			);
 		}
 
+		$session_id       = isset( $_POST['session_id'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['session_id'] ) ), 0, 64 ) : '';
 		$raw_message      = isset( $_POST['message'] ) ? wp_unslash( $_POST['message'] ) : '';
 		$raw_history      = isset( $_POST['history'] ) ? wp_unslash( $_POST['history'] ) : '';
 		$raw_page_context = isset( $_POST['pageContext'] ) ? wp_unslash( $_POST['pageContext'] ) : '';
@@ -89,7 +93,9 @@ final class Ajax_Controller {
 		}
 
 		try {
-			$reply = $this->chat_service->generate_reply( $message, $history, $page_context );
+			$reply      = $this->chat_service->generate_reply( $message, $history, $page_context );
+			$ip_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+			$this->chat_logger->log( $session_id, $ip_address, $message, $reply['message'] ?? '' );
 			wp_send_json_success( $reply );
 		} catch ( \Exception $exception ) {
 			wp_send_json_error(
@@ -113,10 +119,12 @@ final class Ajax_Controller {
 
 		check_ajax_referer( 'ai_woo_assistant_nonce', 'nonce' );
 
-		$name    = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
-		$phone   = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '';
-		$email   = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
-		$message = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+		$session_id = isset( $_POST['session_id'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['session_id'] ) ), 0, 64 ) : '';
+		$name       = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
+		$phone      = isset( $_POST['phone'] ) ? sanitize_text_field( wp_unslash( $_POST['phone'] ) ) : '';
+		$email      = isset( $_POST['email'] ) ? sanitize_email( wp_unslash( $_POST['email'] ) ) : '';
+		$message    = isset( $_POST['message'] ) ? sanitize_textarea_field( wp_unslash( $_POST['message'] ) ) : '';
+		$ip_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
 
 		if ( '' === $name || '' === $message || ! is_email( $email ) ) {
 			wp_send_json_error(
@@ -128,7 +136,7 @@ final class Ajax_Controller {
 		}
 
 		$admin_email = get_option( 'admin_email' );
-		$subject     = sprintf( __( 'New AI assistant enquiry from %s', 'ai-woocommerce-assistant' ), $name );
+		$subject     = sprintf( __( 'New Sellora AI enquiry from %s', 'ai-woocommerce-assistant' ), $name );
 		$body        = sprintf(
 			"Name: %s\nPhone: %s\nEmail: %s\n\nMessage:\n%s",
 			$name,
@@ -137,7 +145,12 @@ final class Ajax_Controller {
 			$message
 		);
 		$headers     = array( 'Reply-To: ' . $name . ' <' . $email . '>' );
-		$stored      = $this->store_enquiry( $name, $phone, $email, $message );
+		$stored      = $this->store_enquiry( $name, $phone, $email, $message, $session_id, $ip_address );
+
+		// Backfill customer name in chat logs for this session.
+		if ( '' !== $session_id && '' !== $name ) {
+			$this->chat_logger->backfill_customer_name( $session_id, $name );
+		}
 
 		$sent = wp_mail( $admin_email, $subject, $body, $headers );
 
@@ -165,7 +178,7 @@ final class Ajax_Controller {
 		);
 	}
 
-	private function store_enquiry( $name, $phone, $email, $message ) {
+	private function store_enquiry( $name, $phone, $email, $message, $session_id = '', $ip_address = '' ) {
 		$post_id = wp_insert_post(
 			array(
 				'post_type'    => 'aiwoo_enquiry',
@@ -183,6 +196,14 @@ final class Ajax_Controller {
 		update_post_meta( $post_id, '_aiwoo_name', $name );
 		update_post_meta( $post_id, '_aiwoo_phone', $phone );
 		update_post_meta( $post_id, '_aiwoo_email', $email );
+
+		if ( '' !== $session_id ) {
+			update_post_meta( $post_id, '_aiwoo_session_id', $session_id );
+		}
+
+		if ( '' !== $ip_address ) {
+			update_post_meta( $post_id, '_aiwoo_ip', $ip_address );
+		}
 
 		return true;
 	}

@@ -23,7 +23,7 @@ final class Settings {
 		'panel_subtitle'       => 'Ask about products, comparisons, and buying advice.',
 		'company_logo'         => '',
 		'employee_photo'       => '',
-		'primary_color'        => '#102a43',
+		'primary_color'        => '#9a162d',
 		'chat_icon'            => '',
 		'max_context_products' => 4,
 		'temperature'          => 0.4,
@@ -31,7 +31,7 @@ final class Settings {
 
 	public function __construct() {
 		add_action( 'admin_init', array( $this, 'register_settings' ) );
-		add_action( 'admin_menu', array( $this, 'register_settings_page' ) );
+		// Admin menu registration is handled by Admin_Menu class.
 	}
 
 	public function all() {
@@ -258,7 +258,7 @@ final class Settings {
 					esc_attr( $field_id ),
 					esc_attr( $name ),
 					esc_attr( (string) $value ),
-					esc_attr( $this->defaults['primary_color'] )
+					esc_attr( '#9a162d' )
 				);
 				break;
 

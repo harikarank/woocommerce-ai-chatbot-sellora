@@ -18,7 +18,11 @@ final class Plugin {
 
 	private $chat_service;
 
+	private $chat_logger;
+
 	private $ajax_controller;
+
+	private $admin_menu;
 
 	public static function instance() {
 		if ( null === self::$instance ) {
@@ -29,10 +33,14 @@ final class Plugin {
 	}
 
 	private function __construct() {
+		Chat_Logger::maybe_create_table();
+
 		$this->settings        = new Settings();
 		$this->catalog_service = new Catalog_Service( $this->settings );
 		$this->chat_service    = new Chat_Service( $this->settings, $this->catalog_service );
-		$this->ajax_controller = new Ajax_Controller( $this->settings, $this->chat_service );
+		$this->chat_logger     = new Chat_Logger();
+		$this->ajax_controller = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger );
+		$this->admin_menu      = new Admin_Menu( $this->settings, $this->chat_logger );
 
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'before_woocommerce_init', array( $this, 'declare_wc_compatibility' ) );
@@ -161,7 +169,7 @@ final class Plugin {
 	}
 
 	public function enqueue_admin_assets( $hook ) {
-		if ( 'settings_page_ai-woo-assistant' !== $hook ) {
+		if ( $hook !== $this->admin_menu->get_settings_hook() ) {
 			return;
 		}
 
