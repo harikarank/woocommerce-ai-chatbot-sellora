@@ -23,7 +23,7 @@
 	font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
 }
 
-/* ── Launcher button ────────────────────────────────────────────────────── */
+/* ── Launcher button — circle ───────────────────────────────────────────── */
 .aiwoo-launcher {
 	display: inline-flex;
 	align-items: center;
@@ -31,25 +31,26 @@
 	gap: 7px;
 	width: 58px;
 	height: 58px;
-	border: 2px solid #000;
+	border: none;
+	border-radius: 50%;
 	background: var(--aiwoo-primary);
 	color: #fff;
-	box-shadow: var(--aiwoo-shadow-lift);
+	box-shadow: 0 4px 16px rgba(154, 22, 45, 0.45), 0 2px 4px rgba(0, 0, 0, 0.2);
 	cursor: pointer;
 	transition:
-		background 0.15s ease,
+		background  0.15s ease,
 		box-shadow  0.15s ease,
 		transform   0.12s ease;
 }
 
 .aiwoo-launcher:hover {
 	background: var(--aiwoo-primary-dark);
-	box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.25);
+	box-shadow: 0 6px 20px rgba(154, 22, 45, 0.55), 0 2px 6px rgba(0, 0, 0, 0.2);
 }
 
 .aiwoo-launcher:active {
-	transform: translate(2px, 2px);
-	box-shadow: none;
+	transform: scale(0.94);
+	box-shadow: 0 2px 8px rgba(154, 22, 45, 0.4);
 }
 
 .aiwoo-launcher__icon {
@@ -102,7 +103,7 @@
 .aiwoo-panel__header {
 	display: flex;
 	align-items: center;
-	justify-content: space-between;
+	gap: 10px;
 	padding: 13px 16px;
 	background: var(--aiwoo-primary);
 	border-bottom: 3px solid var(--aiwoo-primary-dark);
@@ -113,16 +114,20 @@
 	display: flex;
 	align-items: center;
 	gap: 11px;
+	flex: 1 1 0;
 	min-width: 0;
+	overflow: hidden;
 }
 
-/* Company logo — square */
+/* Company logo — circle */
 .aiwoo-panel__logo {
 	flex-shrink: 0;
 	width: 40px;
 	height: 40px;
+	border-radius: 50%;
 	object-fit: cover;
-	border: 2px solid rgba(255, 255, 255, 0.25);
+	border: 2px solid rgba(255, 255, 255, 0.35);
+	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
 }
 
 .aiwoo-panel__header h2,
@@ -251,16 +256,18 @@
 .aiwoo-message-row--assistant { align-self: flex-start; flex-direction: row; }
 .aiwoo-message-row--user      { align-self: flex-end;   flex-direction: row; }
 
-/* ── Avatars — square ───────────────────────────────────────────────────── */
+/* ── Avatars — circle ───────────────────────────────────────────────────── */
 .aiwoo-avatar {
 	flex-shrink: 0;
-	width: 28px;
-	height: 28px;
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
 	background: var(--aiwoo-primary);
 	display: flex;
 	align-items: center;
 	justify-content: center;
 	overflow: hidden;
+	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.18);
 }
 
 .aiwoo-avatar img {
@@ -279,35 +286,63 @@
 
 .aiwoo-avatar--employee {
 	background: #ebebeb;
-	border: 1.5px solid #ccc;
+	border: 1.5px solid #ddd;
 }
 
-/* ── Message bubbles ────────────────────────────────────────────────────── */
+/* ── Message bubbles — curved + tail toward avatar ──────────────────────── */
 .aiwoo-message {
-	max-width: calc(88% - 35px);
+	position: relative;
+	max-width: calc(84% - 35px);
 	padding: 10px 13px;
 	font-size: 13.5px;
 	line-height: 1.58;
 }
 
-.aiwoo-message p          { margin: 0 0 7px; }
+.aiwoo-message p            { margin: 0 0 7px; }
 .aiwoo-message p:last-child { margin-bottom: 0; }
 
-/* Assistant message — white, left accent border */
+/* ── Assistant bubble — light gray, curved, left tail ── */
 .aiwoo-message--assistant {
-	background: var(--aiwoo-surface);
+	background: #f0f0f0;
 	color: var(--aiwoo-copy);
-	border: 1px solid var(--aiwoo-border);
-	border-left: 3px solid var(--aiwoo-primary);
-	box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.05);
+	/* flat bottom-left corner — tail starts here */
+	border-radius: 14px 14px 14px 4px;
+	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
-/* User message — primary red, white text */
+/* Tail pointing left toward assistant avatar */
+.aiwoo-message--assistant::before {
+	content: '';
+	position: absolute;
+	bottom: 6px;
+	left: -7px;
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 6px 8px 6px 0;
+	border-color: transparent #f0f0f0 transparent transparent;
+}
+
+/* ── User bubble — primary red, curved, right tail ── */
 .aiwoo-message--user {
 	background: var(--aiwoo-primary);
 	color: #fff;
-	border: 1px solid var(--aiwoo-primary-dark);
-	box-shadow: 2px 2px 0 rgba(0, 0, 0, 0.15);
+	/* flat bottom-right corner — tail starts here */
+	border-radius: 14px 14px 4px 14px;
+	box-shadow: 0 1px 4px rgba(154, 22, 45, 0.35);
+}
+
+/* Tail pointing right toward user avatar */
+.aiwoo-message--user::before {
+	content: '';
+	position: absolute;
+	bottom: 6px;
+	right: -7px;
+	width: 0;
+	height: 0;
+	border-style: solid;
+	border-width: 6px 0 6px 8px;
+	border-color: transparent transparent transparent var(--aiwoo-primary);
 }
 
 /* ── Product recommendation cards ───────────────────────────────────────── */
