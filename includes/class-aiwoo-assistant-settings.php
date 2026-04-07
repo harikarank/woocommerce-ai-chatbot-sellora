@@ -32,7 +32,7 @@ final class Settings {
 		'claude_model'            => 'claude-sonnet-4-6',
 		// Gemini (Google)
 		'gemini_api_key'          => '',
-		'gemini_model'            => 'gemini-2.0-flash',
+		'gemini_model'            => 'gemini-2.5-flash-preview-04-17',
 		// Input limits
 		'max_message_length'      => 200,
 		// Colour overrides — empty string = use CSS variable default
@@ -267,10 +267,11 @@ final class Settings {
 			case 'gemini_model':
 				?>
 				<select id="<?php echo esc_attr( $field_id ); ?>" name="<?php echo esc_attr( $name ); ?>">
-					<option value="gemini-2.0-flash"      <?php selected( 'gemini-2.0-flash',      $value ); ?>><?php esc_html_e( 'Gemini 2.0 Flash (recommended)', 'ai-woocommerce-assistant' ); ?></option>
-					<option value="gemini-2.0-flash-lite" <?php selected( 'gemini-2.0-flash-lite', $value ); ?>><?php esc_html_e( 'Gemini 2.0 Flash-Lite (fastest)', 'ai-woocommerce-assistant' ); ?></option>
-					<option value="gemini-1.5-pro"        <?php selected( 'gemini-1.5-pro',        $value ); ?>><?php esc_html_e( 'Gemini 1.5 Pro',                 'ai-woocommerce-assistant' ); ?></option>
-					<option value="gemini-1.5-flash"      <?php selected( 'gemini-1.5-flash',      $value ); ?>><?php esc_html_e( 'Gemini 1.5 Flash',               'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-2.5-flash-preview-04-17" <?php selected( 'gemini-2.5-flash-preview-04-17', $value ); ?>><?php esc_html_e( 'Gemini 2.5 Flash Preview (recommended)', 'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-2.5-pro-preview-03-25"   <?php selected( 'gemini-2.5-pro-preview-03-25',   $value ); ?>><?php esc_html_e( 'Gemini 2.5 Pro Preview (most capable)',  'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-2.0-flash-lite"          <?php selected( 'gemini-2.0-flash-lite',          $value ); ?>><?php esc_html_e( 'Gemini 2.0 Flash-Lite (fastest)',         'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-1.5-pro"                 <?php selected( 'gemini-1.5-pro',                 $value ); ?>><?php esc_html_e( 'Gemini 1.5 Pro',                          'ai-woocommerce-assistant' ); ?></option>
+					<option value="gemini-1.5-flash"               <?php selected( 'gemini-1.5-flash',               $value ); ?>><?php esc_html_e( 'Gemini 1.5 Flash',                        'ai-woocommerce-assistant' ); ?></option>
 				</select>
 				<?php
 				break;
@@ -473,7 +474,8 @@ final class Settings {
 	private function normalize_gemini_model( $model ) {
 		$model     = sanitize_text_field( (string) $model );
 		$supported = array(
-			'gemini-2.0-flash',
+			'gemini-2.5-flash-preview-04-17',
+			'gemini-2.5-pro-preview-03-25',
 			'gemini-2.0-flash-lite',
 			'gemini-1.5-pro',
 			'gemini-1.5-flash',
