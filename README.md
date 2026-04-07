@@ -30,7 +30,7 @@ A production-grade WordPress plugin that adds an AI-powered chat widget to any W
 |---|---|
 | **OpenAI** | gpt-5.4-mini *(default)*, gpt-5.4, gpt-4.1-mini |
 | **Claude (Anthropic)** | claude-sonnet-4-6 *(default)*, claude-opus-4-6, claude-haiku-4-5-20251001 |
-| **Gemini (Google)** | gemini-2.5-flash-preview-04-17 *(default)*, gemini-2.5-pro-preview-03-25, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash |
+| **Gemini (Google)** | gemini-2.5-flash *(default)*, gemini-2.5-pro, gemini-2.5-flash-lite, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash |
 
 Switch providers from **Sellora AI → Settings → General**. Only the fields for the selected provider are shown — no clutter.
 

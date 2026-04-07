@@ -83,7 +83,7 @@ All three providers are fully implemented. Selection is saved and respected.
 |---|---|---|---|
 | OpenAI | `openai_api_key` | `openai_model` | gpt-5.4-mini, gpt-5.4, gpt-4.1-mini |
 | Claude | `claude_api_key` | `claude_model` | claude-sonnet-4-6 (default), claude-opus-4-6, claude-haiku-4-5-20251001 |
-| Gemini | `gemini_api_key` | `gemini_model` | gemini-2.5-flash-preview-04-17 (default), gemini-2.5-pro-preview-03-25, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash |
+| Gemini | `gemini_api_key` | `gemini_model` | gemini-2.5-flash (default), gemini-2.5-pro, gemini-2.5-flash-lite, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash |
 
 - API: OpenAI uses `/v1/responses`; Claude uses Anthropic Messages API `/v1/messages` with `system` + `messages`; Gemini uses `/v1beta/models/{model}:generateContent` with `system_instruction` + `contents`
 - All share the same `Provider_Interface::generate_response(['instructions', 'input'])`

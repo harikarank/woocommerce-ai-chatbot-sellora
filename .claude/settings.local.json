@@ -12,7 +12,9 @@
       "Bash(node --check \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/assets/js/admin.js\")",
       "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-claude-provider.php\")",
       "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/class-aiwoo-assistant-gemini-provider.php\")",
-      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/api-handler.php\")"
+      "Bash(php -l \"D:/Harikaran/Golang/Live/woocommerce-ai-chatbot-sellora/includes/api-handler.php\")",
+      "WebSearch",
+      "WebFetch(domain:ai.google.dev)"
     ]
   }
 }

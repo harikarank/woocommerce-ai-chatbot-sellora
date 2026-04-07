@@ -106,13 +106,14 @@ final class Gemini_Provider implements Provider_Interface {
 
 	private function validated_model( $model ) {
 		$supported = array(
-			'gemini-2.5-flash-preview-04-17',
-			'gemini-2.5-pro-preview-03-25',
+			'gemini-2.5-flash',
+			'gemini-2.5-pro',
+			'gemini-2.5-flash-lite',
 			'gemini-2.0-flash-lite',
 			'gemini-1.5-pro',
 			'gemini-1.5-flash',
 		);
 
-		return in_array( $model, $supported, true ) ? $model : 'gemini-2.5-flash-preview-04-17';
+		return in_array( $model, $supported, true ) ? $model : 'gemini-2.5-flash';
 	}
 }
