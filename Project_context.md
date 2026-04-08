@@ -409,6 +409,10 @@ Implemented with the WordPress Settings API.
 - `color_header_bg`, `color_header_text`
 - `color_user_bubble_bg`, `color_user_bubble_text`, `color_agent_bubble_bg`, `color_agent_bubble_text`
 - `color_input_bg`, `color_input_text`, `color_send_bg`, `color_send_text`, `color_send_hover_bg`
+- `color_loading_bg`, `color_loading_text` (typing indicator background and text)
+- `color_counter_bg`, `color_counter_text` (character counter background and text)
+- `color_panel_border` (`.aiwoo-panel` border; default `#000`)
+- `color_header_border_bottom` (`.aiwoo-panel__header` bottom border; default = accent hover)
 
 **AI & Prompt tab**
 - `system_prompt`
@@ -559,6 +563,13 @@ During implementation, the plugin files were syntax-checked with:
 No live WordPress or WooCommerce runtime test is recorded in this repository context file.
 
 ## Change Log
+
+### 2026-04-08 (session 6)
+
+- **Clear chat button** — trash-icon button (`.aiwoo-clear`) added to widget header left of the close button (`chat-widget.php`). On click, clears `state.messages`, removes both `storageKey` and `sessionKey` from `sessionStorage`, and re-renders the welcome message. Next message creates a fresh session ID — no prior history sent to AI, saving tokens.
+- **Message bubble alignment fix** — short messages like "hi" were overflowing the bubble. Root cause: `.aiwoo-message-row--user` used `align-self: flex-end` which shrunk the row to content width, making the `max-width: calc(84% - 35px)` on the bubble a percentage of a tiny row. Fix: replaced `align-self` with `width: 100%` on all rows and `justify-content: flex-start/flex-end` per role so percentage max-width is correctly relative to the full messages container.
+- **6 new color settings** — `color_loading_bg`, `color_loading_text`, `color_counter_bg`, `color_counter_text`, `color_panel_border`, `color_header_border_bottom`. Each maps to a new CSS custom property; injected via `build_color_css()` in `Plugin`. Registered as admin fields in `Settings::register_settings()`.
+- **Input height** — `.aiwoo-input` `min-height` changed from `52px` to `75px`.
 
 ### 2026-04-07 (session 5)
 

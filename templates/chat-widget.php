@@ -48,6 +48,19 @@ $display_subtitle = '' !== $panel_subtitle ? $panel_subtitle : __( 'Ask about pr
 				</div>
 			</div>
 			<button
+				class="aiwoo-clear"
+				type="button"
+				aria-label="<?php esc_attr_e( 'Clear chat history', 'ai-woocommerce-assistant' ); ?>"
+				title="<?php esc_attr_e( 'Clear chat', 'ai-woocommerce-assistant' ); ?>"
+			>
+				<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
+					<polyline points="3 6 5 6 21 6"/>
+					<path d="M19 6l-1 14H6L5 6"/>
+					<path d="M10 11v6M14 11v6"/>
+					<path d="M9 6V4h6v2"/>
+				</svg>
+			</button>
+			<button
 				class="aiwoo-close"
 				type="button"
 				aria-label="<?php esc_attr_e( 'Close chat assistant', 'ai-woocommerce-assistant' ); ?>"

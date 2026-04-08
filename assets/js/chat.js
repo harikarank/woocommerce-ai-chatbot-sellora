@@ -37,6 +37,7 @@
 		send: root.querySelector( '.aiwoo-send' ),
 		launcher: root.querySelector( '.aiwoo-launcher' ),
 		close: root.querySelector( '.aiwoo-close' ),
+		clear: root.querySelector( '.aiwoo-clear' ),
 	};
 
 	function loadState() {
@@ -275,6 +276,13 @@
 
 	elements.close.addEventListener( 'click', function () {
 		setOpen( false );
+	} );
+
+	elements.clear.addEventListener( 'click', function () {
+		state.messages = [];
+		window.sessionStorage.removeItem( storageKey );
+		window.sessionStorage.removeItem( sessionKey );
+		renderMessages();
 	} );
 
 	elements.form.addEventListener( 'submit', function ( event ) {

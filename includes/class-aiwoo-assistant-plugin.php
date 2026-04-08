@@ -232,6 +232,12 @@ final class Plugin {
 			'color_send_hover_bg'     => '--aiwoo-send-hover-bg',
 			'color_input_bg'          => '--aiwoo-input-bg',
 			'color_input_text'        => '--aiwoo-input-text',
+			'color_loading_bg'        => '--aiwoo-loading-bg',
+			'color_loading_text'      => '--aiwoo-loading-text',
+			'color_counter_bg'        => '--aiwoo-counter-bg',
+			'color_counter_text'      => '--aiwoo-counter-text',
+			'color_panel_border'      => '--aiwoo-panel-border',
+			'color_header_border_bottom' => '--aiwoo-header-border-bottom',
 		);
 
 		foreach ( $map as $setting_key => $css_var ) {

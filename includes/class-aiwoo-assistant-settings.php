@@ -53,6 +53,12 @@ final class Settings {
 		'color_send_hover_bg'     => '',
 		'color_input_bg'          => '',
 		'color_input_text'        => '',
+		'color_loading_bg'        => '',
+		'color_loading_text'      => '',
+		'color_counter_bg'        => '',
+		'color_counter_text'      => '',
+		'color_panel_border'      => '',
+		'color_header_border_bottom' => '',
 	);
 
 	public function __construct() {
@@ -118,6 +124,12 @@ final class Settings {
 			'chat_icon'            => __( 'Chat launcher icon', 'ai-woocommerce-assistant' ),
 			'welcome_message'      => __( 'Welcome message', 'ai-woocommerce-assistant' ),
 			'system_prompt'        => __( 'Additional system prompt', 'ai-woocommerce-assistant' ),
+			'color_panel_border'         => __( 'Panel border color', 'ai-woocommerce-assistant' ),
+			'color_header_border_bottom' => __( 'Header bottom border color', 'ai-woocommerce-assistant' ),
+			'color_loading_bg'           => __( 'Typing indicator background', 'ai-woocommerce-assistant' ),
+			'color_loading_text'         => __( 'Typing indicator text color', 'ai-woocommerce-assistant' ),
+			'color_counter_bg'           => __( 'Character counter background', 'ai-woocommerce-assistant' ),
+			'color_counter_text'         => __( 'Character counter text color', 'ai-woocommerce-assistant' ),
 		);
 
 		foreach ( $fields as $field_key => $label ) {
@@ -181,6 +193,9 @@ final class Settings {
 			'color_user_bubble_bg', 'color_user_bubble_text', 'color_agent_bubble_bg',
 			'color_agent_bubble_text', 'color_send_bg', 'color_send_text',
 			'color_send_hover_bg', 'color_input_bg', 'color_input_text',
+			'color_loading_bg', 'color_loading_text',
+			'color_counter_bg', 'color_counter_text',
+			'color_panel_border', 'color_header_border_bottom',
 		);
 
 		foreach ( $color_keys as $key ) {
@@ -430,6 +445,12 @@ final class Settings {
 						'color_send_hover_bg'     => __( '(same as accent hover)', 'ai-woocommerce-assistant' ),
 						'color_input_bg'          => '#ffffff',
 						'color_input_text'        => '#111111',
+						'color_loading_bg'        => __( '(same as surface)', 'ai-woocommerce-assistant' ),
+						'color_loading_text'      => __( '(same as soft text)', 'ai-woocommerce-assistant' ),
+						'color_counter_bg'        => __( '(same as surface)', 'ai-woocommerce-assistant' ),
+						'color_counter_text'      => __( '(same as soft text)', 'ai-woocommerce-assistant' ),
+						'color_panel_border'      => '#000000',
+						'color_header_border_bottom' => __( '(same as accent hover)', 'ai-woocommerce-assistant' ),
 					);
 
 					$default_hint = $placeholder_map[ $key ] ?? '';

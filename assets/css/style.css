@@ -42,6 +42,18 @@
 	--aiwoo-input-bg:           var(--aiwoo-surface);
 	--aiwoo-input-text:         var(--aiwoo-copy);
 
+	/* Typing indicator */
+	--aiwoo-loading-bg:         var(--aiwoo-surface);
+	--aiwoo-loading-text:       var(--aiwoo-copy-soft);
+
+	/* Character counter */
+	--aiwoo-counter-bg:         var(--aiwoo-surface);
+	--aiwoo-counter-text:       var(--aiwoo-copy-soft);
+
+	/* Panel borders */
+	--aiwoo-panel-border:           #000000;
+	--aiwoo-header-border-bottom:   var(--aiwoo-primary-dark);
+
 	/* Shadow */
 	--aiwoo-shadow-lift:   4px 4px 0 rgba(0, 0, 0, 0.25);
 	--aiwoo-shadow-panel:  10px 10px 0 rgba(0, 0, 0, 0.18);
@@ -109,7 +121,7 @@
 	bottom: 72px;
 	width: min(388px, calc(100vw - 20px));
 	height: min(580px, calc(100vh - 110px));
-	border: 2px solid #000;
+	border: 2px solid var(--aiwoo-panel-border);
 	background: var(--aiwoo-surface);
 	box-shadow: var(--aiwoo-shadow-panel);
 	display: flex;
@@ -134,7 +146,7 @@
 	gap: 10px;
 	padding: 13px 16px;
 	background: var(--aiwoo-header-bg);
-	border-bottom: 3px solid var(--aiwoo-primary-dark);
+	border-bottom: 3px solid var(--aiwoo-header-border-bottom);
 	flex-shrink: 0;
 }
 
@@ -194,7 +206,8 @@
 	opacity: 1; /* override parent opacity via stacking context */
 }
 
-.aiwoo-close {
+.aiwoo-close,
+.aiwoo-clear {
 	flex-shrink: 0;
 	width: 30px;
 	height: 30px;
@@ -210,7 +223,8 @@
 	transition: background 0.15s;
 }
 
-.aiwoo-close:hover {
+.aiwoo-close:hover,
+.aiwoo-clear:hover {
 	background: rgba(255, 255, 255, 0.18);
 }
 
@@ -237,7 +251,7 @@
 	align-items: center;
 	gap: 8px;
 	padding: 8px 16px 10px;
-	background: var(--aiwoo-surface);
+	background: var(--aiwoo-loading-bg);
 	border-top: 1px solid var(--aiwoo-border);
 	flex-shrink: 0;
 }
@@ -261,7 +275,7 @@
 
 .aiwoo-loading__text {
 	font-size: 11.5px;
-	color: var(--aiwoo-copy-soft);
+	color: var(--aiwoo-loading-text);
 	font-style: italic;
 	letter-spacing: 0.01em;
 }
@@ -271,6 +285,7 @@
 	display: flex;
 	align-items: flex-end;
 	gap: 7px;
+	width: 100%;
 	animation: aiwoo-msg-in 0.18s ease both;
 }
 
@@ -279,8 +294,8 @@
 	to   { opacity: 1; transform: translateY(0); }
 }
 
-.aiwoo-message-row--assistant { align-self: flex-start; flex-direction: row; }
-.aiwoo-message-row--user      { align-self: flex-end;   flex-direction: row; }
+.aiwoo-message-row--assistant { justify-content: flex-start; }
+.aiwoo-message-row--user      { justify-content: flex-end; }
 
 /* ── Avatars ────────────────────────────────────────────────────────────── */
 .aiwoo-avatar {
@@ -412,8 +427,8 @@
 	padding: 3px 10px 3px;
 	font-size: 10.5px;
 	line-height: 1;
-	color: var(--aiwoo-copy-soft);
-	background: var(--aiwoo-surface);
+	color: var(--aiwoo-counter-text);
+	background: var(--aiwoo-counter-bg);
 	border-top: 1px solid var(--aiwoo-border);
 	flex-shrink: 0;
 	transition: color 0.15s;
@@ -433,7 +448,7 @@
 }
 
 .aiwoo-input {
-	min-height: 52px;
+	min-height: 75px;
 	max-height: 130px;
 	border: none;
 	border-right: 1.5px solid var(--aiwoo-border);
