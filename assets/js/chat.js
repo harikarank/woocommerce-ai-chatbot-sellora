@@ -37,7 +37,6 @@
 		send: root.querySelector( '.aiwoo-send' ),
 		launcher: root.querySelector( '.aiwoo-launcher' ),
 		close: root.querySelector( '.aiwoo-close' ),
-		clear: root.querySelector( '.aiwoo-clear' ),
 	};
 
 	function loadState() {
@@ -252,14 +251,31 @@
 
 	const counter = document.createElement( 'div' );
 	counter.className = 'aiwoo-char-counter';
-	counter.setAttribute( 'aria-live', 'polite' );
-	counter.setAttribute( 'aria-atomic', 'true' );
+
+	const clearBtn = document.createElement( 'button' );
+	clearBtn.type = 'button';
+	clearBtn.className = 'aiwoo-clear';
+	clearBtn.textContent = 'Clear chat history';
+	counter.appendChild( clearBtn );
+
+	const countSpan = document.createElement( 'span' );
+	countSpan.setAttribute( 'aria-live', 'polite' );
+	countSpan.setAttribute( 'aria-atomic', 'true' );
+	counter.appendChild( countSpan );
+
 	elements.form.parentNode.insertBefore( counter, elements.form );
+
+	clearBtn.addEventListener( 'click', function () {
+		state.messages = [];
+		window.sessionStorage.removeItem( storageKey );
+		window.sessionStorage.removeItem( sessionKey );
+		renderMessages();
+	} );
 
 	function updateCounter() {
 		const used      = elements.input.value.length;
 		const remaining = maxLen - used;
-		counter.textContent = remaining + ' / ' + maxLen;
+		countSpan.textContent = remaining + ' / ' + maxLen;
 		const nearLimit = remaining <= Math.max( 20, Math.floor( maxLen * 0.15 ) );
 		counter.classList.toggle( 'is-near-limit', nearLimit && remaining > 0 );
 		counter.classList.toggle( 'is-at-limit', remaining <= 0 );
@@ -276,13 +292,6 @@
 
 	elements.close.addEventListener( 'click', function () {
 		setOpen( false );
-	} );
-
-	elements.clear.addEventListener( 'click', function () {
-		state.messages = [];
-		window.sessionStorage.removeItem( storageKey );
-		window.sessionStorage.removeItem( sessionKey );
-		renderMessages();
 	} );
 
 	elements.form.addEventListener( 'submit', function ( event ) {

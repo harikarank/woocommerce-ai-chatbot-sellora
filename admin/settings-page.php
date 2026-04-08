@@ -103,6 +103,14 @@ defined( 'ABSPATH' ) || exit;
 					<th scope="row"><label for="ai-woo-assistant-welcome_message"><?php esc_html_e( 'Welcome message', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'welcome_message' ) ); ?></td>
 				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-enquiry_title"><?php esc_html_e( 'Enquiry form title', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'enquiry_title' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-enquiry_content"><?php esc_html_e( 'Enquiry form intro text', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'enquiry_content' ) ); ?></td>
+				</tr>
 			</table>
 		</div>
 
@@ -144,6 +152,18 @@ defined( 'ABSPATH' ) || exit;
 				<tr>
 					<th scope="row"><label for="ai-woo-assistant-color_text_soft"><?php esc_html_e( 'Secondary text', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'color_text_soft' ) ); ?></td>
+				</tr>
+			</table>
+
+			<h3><?php esc_html_e( 'Panel Borders', 'ai-woocommerce-assistant' ); ?></h3>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_panel_border"><?php esc_html_e( 'Panel border color', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_panel_border' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_header_border_bottom"><?php esc_html_e( 'Header bottom border color', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_header_border_bottom' ) ); ?></td>
 				</tr>
 			</table>
 
@@ -200,6 +220,26 @@ defined( 'ABSPATH' ) || exit;
 				<tr>
 					<th scope="row"><label for="ai-woo-assistant-color_send_hover_bg"><?php esc_html_e( 'Send button hover background', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'color_send_hover_bg' ) ); ?></td>
+				</tr>
+			</table>
+
+			<h3><?php esc_html_e( 'Typing Indicator &amp; Character Counter', 'ai-woocommerce-assistant' ); ?></h3>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_loading_bg"><?php esc_html_e( 'Typing indicator background', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_loading_bg' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_loading_text"><?php esc_html_e( 'Typing indicator text color', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_loading_text' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_counter_bg"><?php esc_html_e( 'Character counter background', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_counter_bg' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_counter_text"><?php esc_html_e( 'Character counter text color', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_counter_text' ) ); ?></td>
 				</tr>
 			</table>
 		</div>

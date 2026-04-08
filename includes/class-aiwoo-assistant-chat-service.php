@@ -188,8 +188,19 @@ final class Chat_Service {
 	}
 
 	private function get_enquiry_form_html() {
+		$title   = trim( (string) $this->settings->get( 'enquiry_title' ) );
+		$content = trim( (string) $this->settings->get( 'enquiry_content' ) );
+
 		$html  = '<div class="aiwoo-enquiry">';
-		$html .= '<p class="aiwoo-enquiry__intro">' . esc_html__( 'Please share a few more details and our team will follow up with the best option.', 'ai-woocommerce-assistant' ) . '</p>';
+
+		if ( '' !== $title ) {
+			$html .= '<p class="aiwoo-enquiry__title">' . esc_html( $title ) . '</p>';
+		}
+
+		if ( '' !== $content ) {
+			$html .= '<p class="aiwoo-enquiry__intro">' . esc_html( $content ) . '</p>';
+		}
+
 		$html .= '<form class="aiwoo-enquiry-form">';
 		$html .= '<input type="text" name="name" placeholder="' . esc_attr__( 'Name', 'ai-woocommerce-assistant' ) . '" required />';
 		$html .= '<input type="text" name="phone" placeholder="' . esc_attr__( 'Phone (optional)', 'ai-woocommerce-assistant' ) . '" />';

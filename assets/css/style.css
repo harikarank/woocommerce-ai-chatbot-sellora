@@ -126,7 +126,7 @@
 	box-shadow: var(--aiwoo-shadow-panel);
 	display: flex;
 	flex-direction: column;
-	overflow: hidden;
+	overflow: visible;
 	opacity: 0;
 	transform: translateY(14px);
 	pointer-events: none;
@@ -206,8 +206,7 @@
 	opacity: 1; /* override parent opacity via stacking context */
 }
 
-.aiwoo-close,
-.aiwoo-clear {
+.aiwoo-close {
 	flex-shrink: 0;
 	width: 30px;
 	height: 30px;
@@ -223,8 +222,7 @@
 	transition: background 0.15s;
 }
 
-.aiwoo-close:hover,
-.aiwoo-clear:hover {
+.aiwoo-close:hover {
 	background: rgba(255, 255, 255, 0.18);
 }
 
@@ -423,7 +421,8 @@
 /* ── Character counter ──────────────────────────────────────────────────── */
 .aiwoo-char-counter {
 	display: flex;
-	justify-content: flex-end;
+	align-items: center;
+	justify-content: space-between;
 	padding: 3px 10px 3px;
 	font-size: 10.5px;
 	line-height: 1;
@@ -435,8 +434,24 @@
 	user-select: none;
 }
 
-.aiwoo-char-counter.is-near-limit { color: #d97706; }
-.aiwoo-char-counter.is-at-limit   { color: #dc2626; font-weight: 700; }
+.aiwoo-char-counter.is-near-limit span { color: #d97706; }
+.aiwoo-char-counter.is-at-limit   span { color: #dc2626; font-weight: 700; }
+
+.aiwoo-clear {
+	background: none;
+	border: none;
+	padding: 0;
+	font-size: 10px;
+	color: var(--aiwoo-copy-soft);
+	cursor: pointer;
+	opacity: 0.6;
+	transition: opacity 0.15s;
+	line-height: 1;
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+.aiwoo-clear:hover { opacity: 1; }
 
 /* ── Input form ─────────────────────────────────────────────────────────── */
 .aiwoo-form {
@@ -445,6 +460,7 @@
 	border-top: 2px solid #000;
 	background: var(--aiwoo-surface);
 	flex-shrink: 0;
+	overflow: visible;
 }
 
 .aiwoo-input {
@@ -472,26 +488,27 @@
 }
 
 .aiwoo-send {
-	align-self: stretch;
+	align-self: end;
+	width: 35px;
+	height: 35px;
+	flex-shrink: 0;
 	border: none;
-	padding: 0 18px;
+	border-radius: 50%;
+	padding: 0;
 	background: var(--aiwoo-send-bg);
 	color: var(--aiwoo-send-text);
-	font: 700 12.5px/1 inherit;
-	letter-spacing: 0.06em;
-	text-transform: uppercase;
 	cursor: pointer;
 	display: flex;
 	align-items: center;
-	gap: 7px;
-	white-space: nowrap;
-	transition: background 0.15s ease;
+	justify-content: center;
+	transform: translate(5px, -5px);
+	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
+	transition: background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.aiwoo-send:hover    { background: var(--aiwoo-send-hover-bg); }
+.aiwoo-send:hover    { background: var(--aiwoo-send-hover-bg); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.28); }
 .aiwoo-send:active   { background: var(--aiwoo-primary-deep); }
 .aiwoo-send:disabled { opacity: 0.5; cursor: not-allowed; }
-.aiwoo-send svg      { flex-shrink: 0; }
 
 /* ── Enquiry form ───────────────────────────────────────────────────────── */
 .aiwoo-enquiry {
@@ -499,6 +516,13 @@
 	border: 1px solid var(--aiwoo-border);
 	border-left: 3px solid var(--aiwoo-primary);
 	padding: 14px;
+}
+
+.aiwoo-enquiry__title {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--aiwoo-copy);
+	margin: 0 0 6px;
 }
 
 .aiwoo-enquiry__intro {

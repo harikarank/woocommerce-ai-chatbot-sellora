@@ -59,6 +59,9 @@ final class Settings {
 		'color_counter_text'      => '',
 		'color_panel_border'      => '',
 		'color_header_border_bottom' => '',
+		// Enquiry form
+		'enquiry_title'           => '',
+		'enquiry_content'         => 'Please share a few more details and our team will follow up with the best option.',
 	);
 
 	public function __construct() {
@@ -197,6 +200,9 @@ final class Settings {
 			'color_counter_bg', 'color_counter_text',
 			'color_panel_border', 'color_header_border_bottom',
 		);
+
+		$settings['enquiry_title']   = isset( $input['enquiry_title'] ) ? sanitize_text_field( wp_unslash( $input['enquiry_title'] ) ) : '';
+		$settings['enquiry_content'] = isset( $input['enquiry_content'] ) ? sanitize_textarea_field( wp_unslash( $input['enquiry_content'] ) ) : $this->defaults['enquiry_content'];
 
 		foreach ( $color_keys as $key ) {
 			$settings[ $key ] = isset( $input[ $key ] )
@@ -422,6 +428,27 @@ final class Settings {
 					esc_attr( (string) $value )
 				);
 				echo '<p class="description">' . esc_html__( 'Characters allowed per chat message (10–1000). Requests exceeding this limit will be auto-blocked by IP.', 'ai-woocommerce-assistant' ) . '</p>';
+				break;
+
+			case 'enquiry_title':
+				printf(
+					'<input type="text" class="regular-text" id="%1$s" name="%2$s" value="%3$s" placeholder="%4$s" />',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value ),
+					esc_attr__( 'e.g. Contact Us', 'ai-woocommerce-assistant' )
+				);
+				echo '<p class="description">' . esc_html__( 'Leave blank to hide the title above the enquiry form.', 'ai-woocommerce-assistant' ) . '</p>';
+				break;
+
+			case 'enquiry_content':
+				printf(
+					'<textarea class="large-text" rows="3" id="%1$s" name="%2$s">%3$s</textarea>',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_textarea( (string) $value )
+				);
+				echo '<p class="description">' . esc_html__( 'Intro text shown above the enquiry form fields. Leave blank to hide.', 'ai-woocommerce-assistant' ) . '</p>';
 				break;
 
 			default:
