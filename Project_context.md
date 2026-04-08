@@ -481,20 +481,45 @@ The enquiry body is stored as `post_content`.
 
 ## Security
 
-Currently implemented:
+### Security model
+
+**Layer order for chat AJAX** (`handle_chat`):
+1. Plugin-enabled check
+2. IP blocklist (TCP peer `REMOTE_ADDR` only — not spoofable via headers)
+3. Bot User-Agent detection (17 signatures + empty UA) — cheap short-circuit before nonce
+4. Nonce verification (`check_ajax_referer`)
+5. Fixed-window rate limit: 15 req / 60-second window per IP
+6. Payload size guards (history ≤ 8 000 bytes, pageContext ≤ 4 000 bytes)
+7. Message-length limit (auto-blocks IP on exceeded; configurable 10–1 000 chars)
+8. Input sanitisation
+
+**Layer order for enquiry AJAX** (`handle_enquiry`):
+1. Plugin-enabled check
+2. IP blocklist
+3. Nonce verification
+4. Fixed-window rate limit (shared with chat — 15 req / 60-second window)
+5. Honeypot check (`aiwoo_hp` field must be empty; non-empty → silent success, nothing stored)
+6. Input validation (name, email required; email format via `is_email()`)
+7. Input sanitisation
+
+### Implemented controls
+
 - `defined( 'ABSPATH' ) || exit;` in all PHP files
-- bot User-Agent detection in `handle_chat()` — rejects empty UA and known crawler signatures before nonce verification
-- nonce verification on AJAX handlers (`check_ajax_referer`)
-- IP-based rate limiting: 15 requests per sliding minute window per hashed IP
-- sanitization of:
-  - settings inputs
-  - chat message
-  - enquiry fields
-  - page context
-  - conversation history (HTML stripped with `wp_strip_all_tags` before sanitize)
-- API key is not exposed to frontend
-- `provider` setting is forced to `openai` in `sanitize_settings` regardless of submitted value
-- `maybe_warn_if_woocommerce_missing` is hooked on `admin_init` so it only runs in the admin context
+- Bot User-Agent detection in `handle_chat()` — rejects empty UA and 17 known crawler signatures before nonce verification
+- Nonce verification on AJAX handlers (`check_ajax_referer`)
+- **Fixed-window rate limit** — 15 requests per 60-second window per IP; key encodes IP hash + current minute epoch so each window is independent (no TTL-reset drift)
+- Rate limiting applied to **both** chat and enquiry endpoints
+- **Honeypot field** on enquiry form — `aiwoo_hp` is hidden via CSS; bots that populate it receive a silent 200 success without any data being stored or emailed
+- Sanitization of all inputs: settings, chat message, enquiry fields, page context, conversation history (HTML stripped with `wp_strip_all_tags`)
+- API key never exposed to frontend (not included in `wp_localize_script` data)
+- All admin page renderers guard with `current_user_can('manage_options')`
+- All admin_post handlers guard with `current_user_can('manage_options')` + `check_admin_referer`
+- Settings saved via `register_setting()` with `sanitize_settings()` callback
+- Exception messages from AI providers **never forwarded to the browser**; a generic translated string is returned instead; real messages logged via `error_log()` only when `WP_DEBUG_LOG` is active
+- CSV export sanitizes cells against formula injection (cells starting with `=`, `+`, `-`, `@`, tab, or CR are prefixed with a tab)
+- All admin output uses `esc_html()`, `esc_attr()`, `esc_url()`; paginate links use `wp_kses_post()`
+- `provider` setting validated against whitelist `['openai', 'claude', 'gemini']` in `sanitize_settings`
+- `maybe_warn_if_woocommerce_missing` hooked on `admin_init` — runs only in admin context
 
 ## Performance and Token Efficiency
 
@@ -526,7 +551,7 @@ The current code is broadly compatible with PHP 8.3.
 
 ## Known Gaps / Caveats
 
-1. Rate limiter uses a sliding window (transient TTL resets on each request). This is more restrictive for bots doing sustained sends, but does not implement a strict fixed window. A bot doing one request every 61 seconds can send indefinitely.
+1. ~~Rate limiter uses a sliding window (transient TTL resets on each request).~~ — **resolved (session 14)**. Now uses a fixed-window key that rotates every 60 seconds.
 
 2. The current "no product found" behavior is deterministic and does not use AI, because the latest requested behavior explicitly changed that flow.
 
@@ -544,14 +569,16 @@ The current code is broadly compatible with PHP 8.3.
 
 9. Bot detection is signature-based (User-Agent strings). A sophisticated bot using a real browser User-Agent would pass this check and rely only on rate limiting and nonce expiry for containment.
 
+10. ~~No honeypot on enquiry form~~ — **resolved (session 14)**.
+
 ## Suggested Next Improvements
 
 - ~~add admin UI for viewing/storing/exporting enquiries~~ — done
 - improve product matching with weighted ranking or taxonomy-aware search
 - add provider credentials/settings for Claude before enabling that option
-- implement a true fixed-window rate limiter using a timestamped transient
+- ~~implement a true fixed-window rate limiter~~ — done
 - consider moving `call_ai_model()` to a class-based service for stronger dependency injection
-- add a honeypot field to the enquiry form for additional spam protection
+- ~~add a honeypot field to the enquiry form~~ — done
 - add CSV export to enquiries and chat history admin pages
 
 ## Validation Status
@@ -563,6 +590,34 @@ During implementation, the plugin files were syntax-checked with:
 No live WordPress or WooCommerce runtime test is recorded in this repository context file.
 
 ## Change Log
+
+### 2026-04-08 (session 14) — Security audit & hardening
+
+Full security audit performed. Six issues resolved:
+
+**H1 — Exception message leakage (High)**
+- **Before:** `wp_send_json_error(['message' => $exception->getMessage()], 500)` — raw provider errors (including WP_Error network strings like "cURL error 6: …" and API error text like "Incorrect API key…") were forwarded to the browser.
+- **After:** `Ajax_Controller::handle_chat()` catch block returns a generic translated string. Full exception message is written to the PHP error log only when `WP_DEBUG_LOG` is true.
+
+**H2 — No rate limit on enquiry endpoint (High)**
+- **Before:** `handle_enquiry()` had no rate limiting; an attacker could send thousands of enquiry submissions per minute, flooding admin email.
+- **After:** `rate_limit_ok()` is called inside `handle_enquiry()` (same 15/60 s limit as chat).
+
+**H3 — Sliding-window rate limiter TTL reset (High)**
+- **Before:** `set_transient($key, $count + 1, MINUTE_IN_SECONDS)` reset the TTL on every request. An attacker staying at 14 req/min sustained the window indefinitely.
+- **After:** Key now encodes `floor(time() / 60)` (current 60-second epoch). Each window gets a fresh independent key with a 90 s TTL. Windows cannot bleed into each other.
+
+**M1 — CSV formula injection in Top Requests export (Medium)**
+- **Before:** `fputcsv()` wrote `$row->query` and `$row->last_response` verbatim. Cells beginning with `=`, `+`, `-`, `@` are interpreted as formulas by spreadsheet software.
+- **After:** `Admin_Menu::sanitize_csv_cell()` prefixes dangerous-leading cells with a tab character. Applied to query and response preview columns.
+
+**M2 — No honeypot on enquiry form (Medium)**
+- **Before:** Enquiry form had no spam-bot protection beyond nonce.
+- **After:** `Chat_Service::get_enquiry_form_html()` emits a hidden `<input name="aiwoo_hp">` (off-screen via CSS). `handle_enquiry()` checks it before any DB/email work; non-empty value → silent success, nothing stored. `chat.js` `handleEnquirySubmit()` sends `aiwoo_hp` in the payload (value is always empty for real users).
+
+**L1 — LIMIT/OFFSET not wrapped in `$wpdb->prepare()` (Low)**
+- **Before:** `get_sessions()` interpolated `$per_page` and `$offset` directly into the SQL string (both were `absint()`-safe but not prepared).
+- **After:** `$wpdb->prepare()` wraps the full query with `%d` placeholders for LIMIT and OFFSET.
 
 ### 2026-04-08 (session 13)
 

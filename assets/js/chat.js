@@ -233,10 +233,12 @@
 		try {
 			const payload = await postAjax( config.actions.enquiry, {
 				name: form.name.value.trim(),
-				phone: form.phone.value.trim(),
+				phone: form.phone ? form.phone.value.trim() : '',
 				email: form.email.value.trim(),
 				message: form.message.value.trim(),
 				session_id: getOrCreateSessionId(),
+				// Honeypot — real users never see or fill this; bots that do are silently rejected.
+				aiwoo_hp: form.aiwoo_hp ? form.aiwoo_hp.value : '',
 			} );
 			addMessage( 'assistant', payload.message );
 			form.closest( '.aiwoo-enquiry' )?.remove();

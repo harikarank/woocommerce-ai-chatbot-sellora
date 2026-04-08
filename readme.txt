@@ -72,10 +72,14 @@ The settings panel is organised into four focused tabs:
 
 * **IP Blocklist** — Block specific IP addresses or CIDR ranges (IPv4 and IPv6). Blocked IPs never see the widget and all their AJAX requests are rejected server-side.
 * **Auto IP Block** — If a request exceeds the configured message length limit, the sender's IP is automatically added to the blocklist.
-* **Bot Detection** — 17 known bot and crawler User-Agent signatures are blocked before any AI call is made.
-* **Rate Limiting** — 15 requests per minute per IP to prevent burst abuse.
+* **Bot Detection** — 17 known bot and crawler User-Agent signatures are blocked before any AI call is made. Empty User-Agent strings are also rejected.
+* **Fixed-Window Rate Limiting** — 15 requests per 60-second window per IP, applied to both chat and enquiry endpoints. Windows are truly independent; the limit cannot be evaded by pacing requests.
+* **Enquiry Honeypot** — An invisible form field traps bots that auto-fill every input. Legitimate users never see or fill it; bot submissions are silently discarded without storing or emailing anything.
 * **Nonce Verification** — All AJAX endpoints require a valid WordPress nonce.
-* **Input Sanitisation** — All inputs are sanitised and validated before processing.
+* **Input Sanitisation** — All inputs are sanitised with the appropriate WordPress functions (`sanitize_text_field`, `sanitize_textarea_field`, `sanitize_email`, `absint`, `sanitize_hex_color`, `esc_url_raw`) before processing.
+* **Safe Error Handling** — Internal API and network errors are never forwarded to the browser. Users receive a generic message; full details are available in the PHP error log when `WP_DEBUG_LOG` is enabled.
+* **CSV Injection Protection** — The Top Requests CSV export prefixes cells that begin with formula characters (`=`, `+`, `-`, `@`) to prevent formula injection in spreadsheet software.
+* **Capability Checks** — All admin pages and admin-post handlers require `manage_options` capability. Nonces are verified before any state change.
 
 = Enquiry Management =
 
@@ -154,7 +158,7 @@ Messages exceeding the configured limit (default: 200 characters) are rejected a
 
 = Will bots waste my API quota? =
 
-No. Sellora AI applies multiple layers of protection before any AI call is made: IP blocklist check → bot User-Agent detection (17 known signatures) → nonce verification → rate limiting → message length check. A legitimate human customer is typically through all checks within milliseconds; a bot is usually rejected at the first layer.
+No. Sellora AI applies multiple layers of protection before any AI call is made: IP blocklist check → bot User-Agent detection (17 known signatures + empty UA) → nonce verification → fixed-window rate limiting (15 req / 60 s per IP) → message length check. A legitimate human customer is typically through all checks within milliseconds; a bot is usually rejected at the first layer. Enquiry form submissions are also rate-limited and protected by a honeypot field.
 
 = How do I customise the chat colours? =
 

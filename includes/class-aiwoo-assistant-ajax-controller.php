@@ -128,9 +128,14 @@ final class Ajax_Controller {
 			$this->chat_logger->log( $session_id, $ip_address, $message, $reply['message'] ?? '' );
 			wp_send_json_success( $reply );
 		} catch ( \Exception $exception ) {
+			// Log full details server-side; never expose raw exception messages to the frontend.
+			if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log( 'Sellora AI chat error: ' . $exception->getMessage() );
+			}
 			wp_send_json_error(
 				array(
-					'message' => $exception->getMessage(),
+					'message' => __( 'The assistant is temporarily unavailable. Please try again.', 'ai-woocommerce-assistant' ),
 				),
 				500
 			);
@@ -157,6 +162,27 @@ final class Ajax_Controller {
 		}
 
 		check_ajax_referer( 'ai_woo_assistant_nonce', 'nonce' );
+
+		// Rate-limit enquiry submissions the same as chat messages.
+		if ( ! $this->rate_limit_ok() ) {
+			wp_send_json_error(
+				array(
+					'message' => __( 'Too many requests. Please wait a moment and try again.', 'ai-woocommerce-assistant' ),
+				),
+				429
+			);
+		}
+
+		// Honeypot — bots typically populate every field including hidden ones.
+		// Legitimate users never see or fill this field.
+		if ( isset( $_POST['aiwoo_hp'] ) && '' !== $_POST['aiwoo_hp'] ) {
+			// Silently succeed without storing or emailing anything.
+			wp_send_json_success(
+				array(
+					'message' => __( 'Thanks. Your enquiry has been sent and saved. Our team can follow up by email.', 'ai-woocommerce-assistant' ),
+				)
+			);
+		}
 
 		$session_id = isset( $_POST['session_id'] ) ? mb_substr( sanitize_text_field( wp_unslash( $_POST['session_id'] ) ), 0, 64 ) : '';
 		$name       = isset( $_POST['name'] ) ? sanitize_text_field( wp_unslash( $_POST['name'] ) ) : '';
@@ -285,14 +311,20 @@ final class Ajax_Controller {
 
 	private function rate_limit_ok() {
 		$ip_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : 'unknown';
-		$key        = 'ai_woo_assistant_rl_' . md5( $ip_address );
-		$count      = (int) get_transient( $key );
+
+		// Fixed-window rate limiter: the key rotates every 60 seconds so each
+		// window is truly independent. The old sliding-window approach reset the
+		// TTL on every request, allowing sustained bursts just under the limit.
+		$window = (int) floor( time() / 60 );
+		$key    = 'ai_woo_rl_' . md5( $ip_address . '|' . $window );
+		$count  = (int) get_transient( $key );
 
 		if ( $count >= 15 ) {
 			return false;
 		}
 
-		set_transient( $key, $count + 1, MINUTE_IN_SECONDS );
+		// TTL of 90 s covers the window boundary without accumulating stale keys.
+		set_transient( $key, $count + 1, 90 );
 
 		return true;
 	}

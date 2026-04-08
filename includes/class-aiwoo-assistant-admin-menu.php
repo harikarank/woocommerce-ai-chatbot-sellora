@@ -305,13 +305,29 @@ final class Admin_Menu {
 
 		foreach ( $rows as $row ) {
 			fputcsv( $out, array(
-				$row->query,
-				$row->total,
-				mb_substr( $row->last_response, 0, 200 ),
+				$this->sanitize_csv_cell( $row->query ),
+				(int) $row->total,
+				$this->sanitize_csv_cell( mb_substr( $row->last_response, 0, 200 ) ),
 			) );
 		}
 
 		fclose( $out );
+	}
+
+	/**
+	 * Prevent CSV formula injection (a.k.a. CSV injection / formula injection).
+	 * Spreadsheet software treats cells starting with =, +, -, @ as formulas.
+	 * Prefixing with a tab neutralises the cell without altering visible content.
+	 *
+	 * @param string $value Raw cell value.
+	 * @return string Safe cell value.
+	 */
+	private function sanitize_csv_cell( $value ) {
+		$value = (string) $value;
+		if ( '' !== $value && in_array( $value[0], array( '=', '+', '-', '@', "\t", "\r" ), true ) ) {
+			$value = "\t" . $value;
+		}
+		return $value;
 	}
 
 	public function render_quick_replies() {

@@ -151,16 +151,21 @@ final class Chat_Logger {
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
 		return $wpdb->get_results(
-			"SELECT session_id, ip_address, customer_name,
-			        MIN(created_at) AS started_at,
-			        MAX(created_at) AS last_at,
-			        COUNT(*) AS message_count,
-			        SUBSTRING( MIN(user_message), 1, 120 ) AS first_message
-			 FROM `{$this->table}`
-			 {$where}
-			 GROUP BY session_id, ip_address, customer_name
-			 ORDER BY last_at DESC
-			 LIMIT {$per_page} OFFSET {$offset}"
+			$wpdb->prepare(
+				// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+				"SELECT session_id, ip_address, customer_name,
+				        MIN(created_at) AS started_at,
+				        MAX(created_at) AS last_at,
+				        COUNT(*) AS message_count,
+				        SUBSTRING( MIN(user_message), 1, 120 ) AS first_message
+				 FROM `{$this->table}`
+				 {$where}
+				 GROUP BY session_id, ip_address, customer_name
+				 ORDER BY last_at DESC
+				 LIMIT %d OFFSET %d",
+				$per_page,
+				$offset
+			)
 		);
 	}
 
@@ -174,6 +179,7 @@ final class Chat_Logger {
 
 		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
 		return (int) $wpdb->get_var(
+			// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 			"SELECT COUNT(DISTINCT session_id) FROM `{$this->table}` {$where}"
 		);
 	}

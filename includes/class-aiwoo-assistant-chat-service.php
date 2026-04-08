@@ -222,6 +222,8 @@ final class Chat_Service {
 		$html .= '<input type="text" name="phone" placeholder="' . esc_attr__( 'Phone (optional)', 'ai-woocommerce-assistant' ) . '" />';
 		$html .= '<input type="email" name="email" placeholder="' . esc_attr__( 'Email', 'ai-woocommerce-assistant' ) . '" required />';
 		$html .= '<textarea name="message" rows="3" placeholder="' . esc_attr__( 'Message', 'ai-woocommerce-assistant' ) . '" required></textarea>';
+		// Honeypot field — invisible to real users; bots populate it and get silently rejected.
+		$html .= '<input type="text" name="aiwoo_hp" value="" autocomplete="off" tabindex="-1" aria-hidden="true" style="position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;opacity:0;" />';
 		$html .= '<button type="submit">' . esc_html__( 'Send enquiry', 'ai-woocommerce-assistant' ) . '</button>';
 		$html .= '</form>';
 		$html .= '</div>';
