@@ -16,8 +16,56 @@
 		isOpen: false,
 	};
 
-	const storageKey  = config.widgetStateKey || 'ai_woo_assistant_widget_state';
-	const sessionKey  = 'aiwoo_session_id';
+	const storageKey       = config.widgetStateKey || 'ai_woo_assistant_widget_state';
+	const sessionKey       = 'aiwoo_session_id';
+	const viewedKey        = 'aiwoo_viewed_products';
+	const searchKey        = 'aiwoo_search_history';
+
+	// ── Personalisation helpers ──────────────────────────────────────────────
+
+	/**
+	 * Add a product to the viewed-products list in sessionStorage.
+	 * Capped at 10 items; duplicates are deduplicated by id.
+	 */
+	function trackViewedProduct( product ) {
+		if ( ! product || ! product.id ) return;
+		try {
+			var list = JSON.parse( window.sessionStorage.getItem( viewedKey ) || '[]' );
+			list = list.filter( function ( p ) { return p.id !== product.id; } );
+			list.unshift( { id: product.id, name: product.name || '' } );
+			window.sessionStorage.setItem( viewedKey, JSON.stringify( list.slice( 0, 10 ) ) );
+		} catch ( e ) { /* storage unavailable */ }
+	}
+
+	/**
+	 * Add a search keyword to the history in sessionStorage.
+	 * Capped at 10 items; duplicates are deduplicated.
+	 */
+	function trackSearch( keyword ) {
+		keyword = ( keyword || '' ).trim();
+		if ( ! keyword ) return;
+		try {
+			var list = JSON.parse( window.sessionStorage.getItem( searchKey ) || '[]' );
+			list = list.filter( function ( k ) { return k !== keyword; } );
+			list.unshift( keyword );
+			window.sessionStorage.setItem( searchKey, JSON.stringify( list.slice( 0, 10 ) ) );
+		} catch ( e ) { /* storage unavailable */ }
+	}
+
+	function getViewedProducts() {
+		try { return JSON.parse( window.sessionStorage.getItem( viewedKey ) || '[]' ); }
+		catch ( e ) { return []; }
+	}
+
+	function getSearchHistory() {
+		try { return JSON.parse( window.sessionStorage.getItem( searchKey ) || '[]' ); }
+		catch ( e ) { return []; }
+	}
+
+	// If the current page is a product page, record it immediately.
+	if ( config.storeContext && config.storeContext.product ) {
+		trackViewedProduct( config.storeContext.product );
+	}
 
 	function getOrCreateSessionId() {
 		let id = window.sessionStorage.getItem( sessionKey );
@@ -206,12 +254,21 @@
 		addMessage( 'user', message );
 		setLoading( true );
 
+		// Track this message as a search keyword for personalisation.
+		trackSearch( message );
+
 		try {
 			const payload = await postAjax( config.actions.chat, {
 				message,
 				session_id: getOrCreateSessionId(),
 				history: JSON.stringify( state.messages.map( ( item ) => ( { role: item.role, content: item.content } ) ) ),
-				pageContext: JSON.stringify( config.storeContext ),
+				// Merge static store context with live personalisation data.
+				pageContext: JSON.stringify(
+					Object.assign( {}, config.storeContext, {
+						viewedProducts: getViewedProducts().slice( 0, 5 ),
+						searchHistory:  getSearchHistory().slice( 0, 5 ),
+					} )
+				),
 			} );
 
 			addMessage( 'assistant', payload.message, {
@@ -271,6 +328,8 @@
 		state.messages = [];
 		window.sessionStorage.removeItem( storageKey );
 		window.sessionStorage.removeItem( sessionKey );
+		window.sessionStorage.removeItem( viewedKey );
+		window.sessionStorage.removeItem( searchKey );
 		renderMessages();
 	} );
 

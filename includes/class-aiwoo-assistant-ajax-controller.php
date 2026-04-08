@@ -75,7 +75,8 @@ final class Ajax_Controller {
 		$raw_page_context = isset( $_POST['pageContext'] ) ? wp_unslash( $_POST['pageContext'] ) : '';
 
 		// Reject oversized history / page-context payloads.
-		if ( strlen( (string) $raw_history ) > 8000 || strlen( (string) $raw_page_context ) > 4000 ) {
+		// pageContext limit raised to 6000 to accommodate viewedProducts + searchHistory fields.
+		if ( strlen( (string) $raw_history ) > 8000 || strlen( (string) $raw_page_context ) > 6000 ) {
 			wp_send_json_error(
 				array(
 					'message' => __( 'Your message is too large. Please shorten it and try again.', 'ai-woocommerce-assistant' ),

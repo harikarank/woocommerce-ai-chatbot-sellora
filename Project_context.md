@@ -23,8 +23,10 @@ This repository contains a WordPress plugin named **Sellora AI**.
 Its purpose is to:
 - render a floating storefront chat widget branded as Sellora AI
 - search WooCommerce products based on user input
-- send matched product context to an AI provider
-- return conversational product recommendations
+- send matched product context to an AI provider (legacy mode) or let the AI fetch data via MCP tool calls (MCP mode)
+- return conversational product recommendations with product cards
+- support personalised recommendations based on browsing and search history
+- provide upsell / cross-sell intelligence using WooCommerce linked products
 - fall back to an enquiry form when no product match is found
 
 The current implementation is structured as a production-style plugin scaffold with modular backend services, AJAX handlers, frontend assets, and WordPress settings integration.
@@ -549,6 +551,73 @@ Currently implemented:
 
 The current code is broadly compatible with PHP 8.3.
 
+## MCP Tool-Calling Architecture (session 15)
+
+When `enable_mcp = yes`, the plugin switches from the legacy prompt-based path to an MCP-style tool-calling path.
+
+### Legacy vs MCP flow
+
+**Legacy (default):**
+```
+User message → Quick Reply check → Catalog_Service search → inject products into prompt → AI responds
+```
+
+**MCP:**
+```
+User message → Quick Reply check → AI receives message + tool definitions (no product data)
+→ AI calls get_products / get_product_details / get_related_products as needed
+→ MCP_Tools executes and returns results → AI responds with final text
+→ Chat_Service renders product cards from fetched_products
+```
+
+### MCP tools
+
+| Tool | Input | Output | Condition |
+|---|---|---|---|
+| `get_products` | query, limit | id, name, price, url, stock_status | Always available |
+| `get_product_details` | product_id | name, price, attributes, description, sku, stock, url | Always available |
+| `get_related_products` | product_id | upsells[], cross_sells[] | `enable_upsell = yes` |
+| `get_user_context` | session_id (optional) | viewed_products, search_history, cart_items | `enable_personalization = yes` |
+
+### Token optimisation
+
+- No product data in initial prompt — AI fetches only what it needs
+- Tool results return slim JSON (not full product objects)
+- Transient cache (120s) prevents repeated DB queries within the same window
+- Per-tool call cap (3/tool/request) prevents runaway loops
+- Max 5 API round trips per chat turn
+
+### Personalisation data flow
+
+1. `chat.js` tracks viewed products and search keywords in `sessionStorage`
+2. On each chat message, these are merged into the `pageContext` payload
+3. `Chat_Service::sanitize_page_context()` sanitises `viewedProducts` and `searchHistory`
+4. `MCP_Tools::set_request_context()` receives the sanitised context
+5. When AI calls `get_user_context`, the tool returns viewed products, search history, and server-side cart items
+
+### New settings (AI Intelligence tab)
+
+| Setting | Default | Description |
+|---|---|---|
+| `enable_mcp` | `no` | Toggle MCP tool-calling mode |
+| `mcp_max_products` | `5` | Max products per `get_products` call (1–10) |
+| `enable_personalization` | `no` | Expose `get_user_context` tool |
+| `enable_upsell` | `no` | Expose `get_related_products` tool |
+
+### Files involved
+
+- `includes/class-aiwoo-assistant-mcp-tools.php` — tool definitions, executor, caching
+- `includes/class-aiwoo-assistant-chat-service.php` — MCP routing, instruction/message builders
+- `includes/class-aiwoo-assistant-provider-interface.php` — `generate_with_tools()` contract
+- `includes/class-aiwoo-assistant-openai-provider.php` — OpenAI function calling
+- `includes/class-aiwoo-assistant-claude-provider.php` — Anthropic tool_use protocol
+- `includes/class-aiwoo-assistant-gemini-provider.php` — Gemini functionCall protocol
+- `includes/class-aiwoo-assistant-settings.php` — 4 new settings fields
+- `admin/settings-page.php` — AI Intelligence tab UI
+- `assets/js/chat.js` — personalisation tracking (viewedProducts, searchHistory)
+- `includes/class-aiwoo-assistant-catalog-service.php` — `$limit` parameter added
+- `includes/class-aiwoo-assistant-ajax-controller.php` — pageContext size limit raised to 6000
+
 ## Known Gaps / Caveats
 
 1. ~~Rate limiter uses a sliding window (transient TTL resets on each request).~~ — **resolved (session 14)**. Now uses a fixed-window key that rotates every 60 seconds.
@@ -559,7 +628,7 @@ The current code is broadly compatible with PHP 8.3.
 
 4. `call_ai_model()` creates a fresh `Settings` object internally instead of receiving dependency injection when no settings object is provided via context.
 
-5. `provider` selection supports `claude` in code, but Claude calls throw an exception. The admin UI only shows OpenAI. The `sanitize_settings` method forces `provider` to `openai` regardless of submitted value.
+5. ~~`provider` selection supports `claude` in code, but Claude calls throw an exception.~~ — **resolved (session 5)**. All three providers (OpenAI, Claude, Gemini) are fully functional including MCP tool-calling. Provider dropdown validates against `['openai', 'claude', 'gemini']`.
 
 6. The frontend persists recent messages to `sessionStorage`, which is useful for UX but means chat history is browser-session scoped only.
 
@@ -575,11 +644,14 @@ The current code is broadly compatible with PHP 8.3.
 
 - ~~add admin UI for viewing/storing/exporting enquiries~~ — done
 - improve product matching with weighted ranking or taxonomy-aware search
-- add provider credentials/settings for Claude before enabling that option
+- ~~add provider credentials/settings for Claude before enabling that option~~ — done (session 5)
 - ~~implement a true fixed-window rate limiter~~ — done
 - consider moving `call_ai_model()` to a class-based service for stronger dependency injection
 - ~~add a honeypot field to the enquiry form~~ — done
 - add CSV export to enquiries and chat history admin pages
+- ~~implement MCP tool-calling to reduce token usage~~ — done (session 15)
+- add category/tag browsing tool for MCP mode
+- add streaming support for tool-calling responses
 
 ## Validation Status
 
@@ -590,6 +662,70 @@ During implementation, the plugin files were syntax-checked with:
 No live WordPress or WooCommerce runtime test is recorded in this repository context file.
 
 ## Change Log
+
+### 2026-04-08 (session 15) — MCP tool-calling architecture
+
+Full implementation of MCP-style tool-calling to replace the prompt-based product injection pattern. Nine-part scope:
+
+**Part 1 — MCP Tool Layer:**
+- New class `includes/class-aiwoo-assistant-mcp-tools.php` (449 lines) with 4 tools: `get_products`, `get_product_details`, `get_related_products`, `get_user_context`.
+- Each tool validates/sanitises inputs, caches results via transients (120s TTL), and enforces per-tool call caps (3/tool/request).
+- `get_products` reuses `Catalog_Service::find_relevant_products()` (new `$limit` param added).
+- `get_product_details` fetches full product data including visible attributes via `wc_get_product()`.
+- `get_related_products` uses `$product->get_upsell_ids()` and `$product->get_cross_sell_ids()`.
+- `get_user_context` returns viewed products + search history (from frontend `sessionStorage`) + server-side WC cart items.
+
+**Part 2 — AI Tool-Calling Integration:**
+- `Provider_Interface` — added `generate_with_tools(array $payload, array $tools, callable $tool_executor)` method.
+- All 3 providers implement the tool-calling loop (max 5 rounds):
+  - **OpenAI:** Chat Completions `tools` + `tool_choice: auto`, `role: tool` for results.
+  - **Claude:** Messages API `tools` with `input_schema`, `tool_use` stop_reason, `tool_result` blocks in user turn.
+  - **Gemini:** `function_declarations`, `functionCall` parts, `functionResponse` parts.
+- `Chat_Service` — new `generate_reply_mcp()` method with dedicated `build_instructions_mcp()` (no product data — AI uses tools) and `build_messages_mcp()` (history + lightweight page context). Routes via `enable_mcp` setting. Legacy path extracted to `generate_reply_legacy()` (unchanged behaviour).
+- Product card rendering extracted into shared `build_product_cards_html()` used by both paths.
+
+**Part 3 — Product-Aware Responses:**
+- MCP system instructions include anti-hallucination guidance: "Never invent or guess product details — rely only on tool results."
+- Tool results include price, stock status, URL — AI can cite real data.
+
+**Part 4 — Personalised Recommendations:**
+- `chat.js` — new `sessionStorage` tracking: `aiwoo_viewed_products` (auto-records on product pages), `aiwoo_search_history` (records each chat message). Both capped at 10 items, deduplicated.
+- `pageContext` payload now includes `viewedProducts` and `searchHistory` arrays.
+- `Chat_Service::sanitize_page_context()` — sanitises `viewedProducts` (array of {id, name}, max 10) and `searchHistory` (array of strings, max 10).
+- `MCP_Tools::set_request_context()` stores sanitised context; `get_user_context` tool reads it.
+- Clear chat button also clears personalisation storage.
+
+**Part 5 — Upsell & Cross-sell Intelligence:**
+- `get_related_products` tool conditionally exposed when `enable_upsell = yes`.
+- Returns up to 4 upsell + 4 cross-sell products (id, name, price, url, stock_status).
+- AI can suggest "You may also like…" and "Customers also bought…" items.
+
+**Part 6 — Performance:**
+- Tool results are slim JSON (not full WC product objects).
+- Transient caching (120s) per query/product.
+- `MAX_CALLS_PER_TOOL = 3` prevents repeated queries.
+- Max 5 API round trips per turn.
+- `pageContext` size limit raised from 4000 to 6000 bytes to accommodate personalisation fields.
+
+**Part 7 — Security:**
+- All tool inputs sanitised with `sanitize_text_field()`, `absint()`.
+- Product IDs validated; non-existent products return error.
+- Unknown tool names rejected via `sanitize_key()`.
+- No sensitive data exposed in tool results.
+
+**Part 8 — Settings (Admin):**
+- 4 new settings: `enable_mcp` (checkbox), `mcp_max_products` (1–10), `enable_personalization` (checkbox), `enable_upsell` (checkbox).
+- New "AI Intelligence" tab in `admin/settings-page.php` with MCP, Personalisation, and Upsell sections.
+- Defaults: all disabled (`no`), `mcp_max_products = 5`.
+- Sanitisation in `Settings::sanitize_settings()`.
+
+**Part 9 — Wiring:**
+- `woocommerce-ai-chatbot-sellora.php` — requires new MCP_Tools class.
+- `Plugin::__construct()` — instantiates `MCP_Tools`, passes to `Chat_Service`.
+- `Catalog_Service::find_relevant_products()` — new optional `$limit` parameter (used by MCP tool, clamped 1–10).
+
+**Files changed:** 12 modified + 1 new (830 insertions, 27 deletions).
+**Syntax verification:** All PHP files pass `php -l`, JS passes `node --check`.
 
 ### 2026-04-08 (session 14) — Security audit & hardening
 

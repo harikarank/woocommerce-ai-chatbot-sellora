@@ -28,6 +28,8 @@ final class Plugin {
 
 	private $quick_reply_service;
 
+	private $mcp_tools;
+
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -44,7 +46,8 @@ final class Plugin {
 		$this->settings            = new Settings();
 		$this->catalog_service     = new Catalog_Service( $this->settings );
 		$this->quick_reply_service = new Quick_Reply_Service();
-		$this->chat_service        = new Chat_Service( $this->settings, $this->catalog_service, $this->quick_reply_service );
+		$this->mcp_tools           = new MCP_Tools( $this->settings, $this->catalog_service );
+		$this->chat_service        = new Chat_Service( $this->settings, $this->catalog_service, $this->quick_reply_service, $this->mcp_tools );
 		$this->chat_logger         = new Chat_Logger();
 		$this->ip_blocker          = new IP_Blocker();
 		$this->ajax_controller     = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger, $this->ip_blocker );

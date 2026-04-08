@@ -30,12 +30,18 @@ final class Catalog_Service {
 		return $this->format_product( $product );
 	}
 
-	public function find_relevant_products( $message, $current_product_id = 0 ) {
+	/**
+	 * @param string   $message            User message to derive keywords from.
+	 * @param int      $current_product_id Product currently being viewed (0 = none).
+	 * @param int|null $limit              Override the settings-based limit (used by MCP_Tools).
+	 * @return array[]
+	 */
+	public function find_relevant_products( $message, $current_product_id = 0, $limit = null ) {
 		if ( ! class_exists( 'WooCommerce' ) ) {
 			return array();
 		}
 
-		$limit       = (int) $this->settings->get( 'max_context_products' );
+		$limit = ( null !== $limit ) ? max( 1, min( 10, (int) $limit ) ) : (int) $this->settings->get( 'max_context_products' );
 		$product_ids = array();
 		$keywords    = $this->extract_keywords( $message );
 

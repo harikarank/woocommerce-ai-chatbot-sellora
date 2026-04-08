@@ -66,6 +66,11 @@ final class Settings {
 		// Enquiry form
 		'enquiry_title'           => '',
 		'enquiry_content'         => 'Let us know a bit more, and we\'ll suggest what fits best.',
+		// MCP / AI Intelligence
+		'enable_mcp'              => 'no',
+		'mcp_max_products'        => 5,
+		'enable_personalization'  => 'no',
+		'enable_upsell'           => 'no',
 	);
 
 	public function __construct() {
@@ -218,6 +223,14 @@ final class Settings {
 				? ( sanitize_hex_color( $input[ $key ] ) ?? '' )
 				: '';
 		}
+
+		// MCP / AI Intelligence settings.
+		$settings['enable_mcp']             = ! empty( $input['enable_mcp'] ) ? 'yes' : 'no';
+		$settings['mcp_max_products']        = isset( $input['mcp_max_products'] )
+			? max( 1, min( 10, absint( $input['mcp_max_products'] ) ) )
+			: $this->defaults['mcp_max_products'];
+		$settings['enable_personalization']  = ! empty( $input['enable_personalization'] ) ? 'yes' : 'no';
+		$settings['enable_upsell']           = ! empty( $input['enable_upsell'] ) ? 'yes' : 'no';
 
 		return $settings;
 	}

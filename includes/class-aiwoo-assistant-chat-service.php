@@ -2,6 +2,9 @@
 /**
  * Chat orchestration service.
  *
+ * Routes each chat turn through either the legacy prompt-based path or the
+ * new MCP tool-calling path, depending on the `enable_mcp` setting.
+ *
  * @package AIWooAssistant
  */
 
@@ -10,26 +13,51 @@ namespace AIWooAssistant;
 defined( 'ABSPATH' ) || exit;
 
 final class Chat_Service {
+
+	/** @var Settings */
 	private $settings;
 
+	/** @var Catalog_Service */
 	private $catalog_service;
 
+	/** @var Quick_Reply_Service */
 	private $quick_reply_service;
 
-	public function __construct( Settings $settings, Catalog_Service $catalog_service, Quick_Reply_Service $quick_reply_service ) {
+	/** @var MCP_Tools */
+	private $mcp_tools;
+
+	public function __construct(
+		Settings $settings,
+		Catalog_Service $catalog_service,
+		Quick_Reply_Service $quick_reply_service,
+		MCP_Tools $mcp_tools
+	) {
 		$this->settings            = $settings;
 		$this->catalog_service     = $catalog_service;
 		$this->quick_reply_service = $quick_reply_service;
+		$this->mcp_tools           = $mcp_tools;
 	}
 
+	// -------------------------------------------------------------------------
+	// Public entry point
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Generate a reply for the given user message.
+	 *
+	 * @param string $message      Sanitised user input.
+	 * @param array  $history      Conversation history [{role, content}, ...].
+	 * @param array  $page_context Frontend page/product context.
+	 * @return array{message: string, html: bool, enquiry_form: bool, recommendations: array}
+	 * @throws \Exception On unrecoverable AI provider error.
+	 */
 	public function generate_reply( $message, array $history = array(), array $page_context = array() ) {
 		$message      = sanitize_textarea_field( $message );
 		$history      = $this->sanitize_history( $history );
 		$page_context = $this->sanitize_page_context( $page_context );
 
-		// ── Quick reply check — runs before catalog search and AI call ────────
+		// ── 1. Quick reply check — intercepts before any AI or catalog call ───
 		$quick_response = $this->quick_reply_service->find_match( $message );
-
 		if ( null !== $quick_response ) {
 			return array(
 				'message'         => $quick_response,
@@ -38,8 +66,149 @@ final class Chat_Service {
 				'recommendations' => array(),
 			);
 		}
-		// ── End quick reply check ─────────────────────────────────────────────
 
+		// ── 2. Route to MCP or legacy path ────────────────────────────────────
+		if ( 'yes' === $this->settings->get( 'enable_mcp' ) ) {
+			return $this->generate_reply_mcp( $message, $history, $page_context );
+		}
+
+		return $this->generate_reply_legacy( $message, $history, $page_context );
+	}
+
+	// -------------------------------------------------------------------------
+	// MCP tool-calling path
+	// -------------------------------------------------------------------------
+
+	/**
+	 * MCP path: the AI fetches data via tools; no product catalog is injected
+	 * into the prompt. Adds ≈ 1 extra API round trip per tool call; transient
+	 * caching in MCP_Tools keeps latency acceptable.
+	 *
+	 * @param string $message
+	 * @param array  $history
+	 * @param array  $page_context
+	 * @return array
+	 */
+	private function generate_reply_mcp( string $message, array $history, array $page_context ): array {
+		// Give the tool executor access to the current request's context
+		// (viewed products, search history, cart) before calling any tool.
+		$this->mcp_tools->set_request_context( $page_context );
+
+		$tools         = $this->mcp_tools->get_tool_definitions();
+		$mcp_tools_ref = $this->mcp_tools;
+
+		$tool_executor = static function ( string $name, array $args ) use ( $mcp_tools_ref ): array {
+			return $mcp_tools_ref->execute( $name, $args );
+		};
+
+		$provider = make_ai_provider( $this->settings );
+
+		$assistant_message = $provider->generate_with_tools(
+			array(
+				'settings'     => $this->settings,
+				'instructions' => $this->build_instructions_mcp(),
+				'messages'     => $this->build_messages_mcp( $message, $history, $page_context ),
+			),
+			$tools,
+			$tool_executor
+		);
+
+		// If get_products was called, render product cards under the AI text.
+		$fetched_products = $this->mcp_tools->get_fetched_products();
+
+		$response_html = wpautop( esc_html( $assistant_message ) );
+		if ( ! empty( $fetched_products ) ) {
+			$response_html .= $this->build_product_cards_html( $fetched_products );
+		}
+
+		return array(
+			'message'         => $response_html,
+			'html'            => true,
+			'enquiry_form'    => false,
+			'recommendations' => $fetched_products,
+		);
+	}
+
+	/**
+	 * Build the system instructions for MCP mode.
+	 * Intentionally concise — no product data injected here.
+	 *
+	 * @return string
+	 */
+	private function build_instructions_mcp(): string {
+		$currency    = get_option( 'woocommerce_currency', 'USD' );
+		$base_prompt = trim( (string) $this->settings->get( 'system_prompt' ) );
+		$parts       = array();
+
+		if ( '' !== $base_prompt ) {
+			$parts[] = $base_prompt;
+		}
+
+		$parts[] = 'You are a helpful shopping assistant for ' . get_bloginfo( 'name' ) . '.';
+		$parts[] = 'Store currency: ' . $currency . '. Store description: ' . get_bloginfo( 'description' ) . '.';
+		$parts[] = 'Always use the available tools to fetch product data before recommending items.';
+		$parts[] = 'Never invent or guess product details — rely only on tool results.';
+		$parts[] = 'When recommending products, include the name, price, availability, and a product link.';
+
+		return implode( "\n", $parts );
+	}
+
+	/**
+	 * Convert sanitised history + current message into a messages array
+	 * suitable for the provider's generate_with_tools() call.
+	 *
+	 * @param string $message
+	 * @param array  $history
+	 * @param array  $page_context
+	 * @return array  [{role, content}, ...]
+	 */
+	private function build_messages_mcp( string $message, array $history, array $page_context ): array {
+		$messages = array();
+
+		// Include up to the last 6 history entries.
+		foreach ( array_slice( $history, -6 ) as $entry ) {
+			if ( empty( $entry['role'] ) || empty( $entry['content'] ) ) {
+				continue;
+			}
+			$messages[] = array(
+				'role'    => $entry['role'],
+				'content' => mb_substr( (string) $entry['content'], 0, 1000 ),
+			);
+		}
+
+		// Prepend lightweight page context to the user message (no product data).
+		$context_prefix = '';
+		if ( ! empty( $page_context['pageUrl'] ) ) {
+			$context_prefix .= 'Current page: ' . esc_url_raw( $page_context['pageUrl'] ) . "\n";
+		}
+		if ( ! empty( $page_context['product']['id'] ) && ! empty( $page_context['product']['name'] ) ) {
+			$context_prefix .= 'Viewing product #' . absint( $page_context['product']['id'] )
+				. ' — ' . sanitize_text_field( $page_context['product']['name'] ) . "\n";
+		}
+
+		$messages[] = array(
+			'role'    => 'user',
+			'content' => ( '' !== $context_prefix ? $context_prefix . "\n" : '' )
+				. sanitize_text_field( $message ),
+		);
+
+		return $messages;
+	}
+
+	// -------------------------------------------------------------------------
+	// Legacy prompt-based path (unchanged behaviour)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Legacy path: pre-fetches products from the catalog and injects them
+	 * into the prompt. Used when enable_mcp = no (the default).
+	 *
+	 * @param string $message
+	 * @param array  $history
+	 * @param array  $page_context
+	 * @return array
+	 */
+	private function generate_reply_legacy( string $message, array $history, array $page_context ): array {
 		$current_product_id = ! empty( $page_context['product']['id'] ) ? absint( $page_context['product']['id'] ) : 0;
 		$products           = $this->catalog_service->find_relevant_products( $message, $current_product_id );
 
@@ -69,10 +238,14 @@ final class Chat_Service {
 		);
 	}
 
+	// -------------------------------------------------------------------------
+	// Legacy helpers (unchanged)
+	// -------------------------------------------------------------------------
+
 	private function build_instructions() {
-		$currency      = get_option( 'woocommerce_currency', 'USD' );
-		$base_prompt   = trim( (string) $this->settings->get( 'system_prompt' ) );
-		$prompt_parts  = array();
+		$currency     = get_option( 'woocommerce_currency', 'USD' );
+		$base_prompt  = trim( (string) $this->settings->get( 'system_prompt' ) );
+		$prompt_parts = array();
 
 		if ( '' !== $base_prompt ) {
 			$prompt_parts[] = $base_prompt;
@@ -94,7 +267,6 @@ final class Chat_Service {
 			if ( empty( $entry['role'] ) || empty( $entry['content'] ) ) {
 				continue;
 			}
-
 			$role            = 'assistant' === $entry['role'] ? 'Assistant' : 'Customer';
 			$history_lines[] = $role . ': ' . sanitize_text_field( (string) $entry['content'] );
 		}
@@ -107,12 +279,7 @@ final class Chat_Service {
 			$page_lines[] = 'Current product context: ' . wp_json_encode( $page_context['product'] );
 		}
 
-		$product_lines = array_map(
-			static function( $product ) {
-				return wp_json_encode( $product );
-			},
-			$products
-		);
+		$product_lines = array_map( static fn( $p ) => wp_json_encode( $p ), $products );
 
 		return implode(
 			"\n\n",
@@ -126,6 +293,10 @@ final class Chat_Service {
 			)
 		);
 	}
+
+	// -------------------------------------------------------------------------
+	// Sanitisation helpers
+	// -------------------------------------------------------------------------
 
 	private function sanitize_history( array $history ) {
 		$sanitized = array();
@@ -168,14 +339,55 @@ final class Chat_Service {
 			);
 		}
 
+		// ── Personalisation fields (MCP mode) ─────────────────────────────────
+		$sanitized['viewedProducts'] = array();
+		if ( ! empty( $page_context['viewedProducts'] ) && is_array( $page_context['viewedProducts'] ) ) {
+			foreach ( array_slice( $page_context['viewedProducts'], 0, 10 ) as $item ) {
+				if ( ! is_array( $item ) || empty( $item['id'] ) ) {
+					continue;
+				}
+				$sanitized['viewedProducts'][] = array(
+					'id'   => absint( $item['id'] ),
+					'name' => sanitize_text_field( (string) ( $item['name'] ?? '' ) ),
+				);
+			}
+		}
+
+		$sanitized['searchHistory'] = array();
+		if ( ! empty( $page_context['searchHistory'] ) && is_array( $page_context['searchHistory'] ) ) {
+			foreach ( array_slice( $page_context['searchHistory'], 0, 10 ) as $kw ) {
+				$kw = sanitize_text_field( (string) $kw );
+				if ( '' !== $kw ) {
+					$sanitized['searchHistory'][] = $kw;
+				}
+			}
+		}
+
 		return $sanitized;
 	}
 
+	// -------------------------------------------------------------------------
+	// HTML builders
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Wrap AI text + product cards (legacy path).
+	 */
 	private function build_product_response_html( $assistant_message, array $products ) {
-		$html = wpautop( esc_html( $assistant_message ) );
+		$html  = wpautop( esc_html( $assistant_message ) );
+		$html .= $this->build_product_cards_html( $products );
+		return $html;
+	}
 
-		$html .= '<div class="aiwoo-product-list">';
+	/**
+	 * Render product cards for a slice of products (shared between MCP and legacy paths).
+	 */
+	private function build_product_cards_html( array $products ): string {
+		if ( empty( $products ) ) {
+			return '';
+		}
 
+		$html = '<div class="aiwoo-product-list">';
 		foreach ( array_slice( $products, 0, 3 ) as $product ) {
 			$html .= '<a class="aiwoo-product-card" href="' . esc_url( $product['permalink'] ) . '">';
 			$html .= '<strong class="aiwoo-product-card__title">' . esc_html( $product['name'] ) . '</strong>';
@@ -184,7 +396,6 @@ final class Chat_Service {
 			$html .= '<span class="aiwoo-product-card__desc">' . esc_html( wp_trim_words( $product['short_description'] ?: $product['description'], 18 ) ) . '</span>';
 			$html .= '</a>';
 		}
-
 		$html .= '</div>';
 
 		return $html;
@@ -207,7 +418,7 @@ final class Chat_Service {
 		$title   = trim( (string) $this->settings->get( 'enquiry_title' ) );
 		$content = trim( (string) $this->settings->get( 'enquiry_content' ) );
 
-		$html  = '<div class="aiwoo-enquiry">';
+		$html = '<div class="aiwoo-enquiry">';
 
 		if ( '' !== $title ) {
 			$html .= '<p class="aiwoo-enquiry__title">' . esc_html( $title ) . '</p>';

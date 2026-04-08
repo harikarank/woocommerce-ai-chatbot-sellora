@@ -16,6 +16,7 @@ defined( 'ABSPATH' ) || exit;
 		<a href="#" class="nav-tab" data-aiwoo-tab="widget"><?php esc_html_e( 'Widget', 'ai-woocommerce-assistant' ); ?></a>
 		<a href="#" class="nav-tab" data-aiwoo-tab="appearance"><?php esc_html_e( 'Appearance', 'ai-woocommerce-assistant' ); ?></a>
 		<a href="#" class="nav-tab" data-aiwoo-tab="prompt"><?php esc_html_e( 'AI &amp; Prompt', 'ai-woocommerce-assistant' ); ?></a>
+		<a href="#" class="nav-tab" data-aiwoo-tab="intelligence"><?php esc_html_e( 'AI Intelligence', 'ai-woocommerce-assistant' ); ?></a>
 	</nav>
 
 	<form action="options.php" method="post" id="aiwoo-settings-form">
@@ -263,6 +264,102 @@ defined( 'ABSPATH' ) || exit;
 				<tr>
 					<th scope="row"><label for="ai-woo-assistant-system_prompt"><?php esc_html_e( 'Additional system prompt', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'system_prompt' ) ); ?></td>
+				</tr>
+			</table>
+		</div>
+
+		<?php /* ── AI INTELLIGENCE ──────────────────────────────────────────── */ ?>
+		<div id="aiwoo-tab-intelligence" class="aiwoo-tab-pane" hidden>
+			<p class="description" style="margin-top:16px;">
+				<?php esc_html_e( 'MCP tool-calling mode, personalisation, and upsell intelligence. Enable MCP to let the AI fetch only the product data it needs — reducing prompt size and improving accuracy.', 'ai-woocommerce-assistant' ); ?>
+			</p>
+
+			<h3><?php esc_html_e( 'MCP Tool Calling', 'ai-woocommerce-assistant' ); ?></h3>
+			<p class="description">
+				<?php esc_html_e( 'When enabled the AI uses function calls to fetch products on demand instead of receiving all product data upfront. This reduces token usage and improves response accuracy. Each chat turn may make 1–2 additional API round trips.', 'ai-woocommerce-assistant' ); ?>
+			</p>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">
+						<label for="ai-woo-assistant-enable_mcp"><?php esc_html_e( 'Enable MCP tool calling', 'ai-woocommerce-assistant' ); ?></label>
+					</th>
+					<td>
+						<label>
+							<input
+								type="checkbox"
+								id="ai-woo-assistant-enable_mcp"
+								name="ai_woo_assistant_settings[enable_mcp]"
+								value="1"
+								<?php checked( 'yes', $settings->get( 'enable_mcp' ) ); ?>
+							/>
+							<?php esc_html_e( 'Let the AI decide which products to fetch via tool calls.', 'ai-woocommerce-assistant' ); ?>
+						</label>
+					</td>
+				</tr>
+				<tr>
+					<th scope="row">
+						<label for="ai-woo-assistant-mcp_max_products"><?php esc_html_e( 'Max products per tool call', 'ai-woocommerce-assistant' ); ?></label>
+					</th>
+					<td>
+						<input
+							type="number"
+							min="1"
+							max="10"
+							id="ai-woo-assistant-mcp_max_products"
+							name="ai_woo_assistant_settings[mcp_max_products]"
+							value="<?php echo esc_attr( (string) $settings->get( 'mcp_max_products' ) ); ?>"
+						/>
+						<p class="description"><?php esc_html_e( 'Maximum products returned by a single get_products tool call (1–10).', 'ai-woocommerce-assistant' ); ?></p>
+					</td>
+				</tr>
+			</table>
+
+			<h3><?php esc_html_e( 'Personalisation', 'ai-woocommerce-assistant' ); ?></h3>
+			<p class="description">
+				<?php esc_html_e( 'Track recently viewed products, search history, and cart contents so the AI can tailor recommendations to each visitor. Requires MCP mode.', 'ai-woocommerce-assistant' ); ?>
+			</p>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">
+						<label for="ai-woo-assistant-enable_personalization"><?php esc_html_e( 'Enable personalisation', 'ai-woocommerce-assistant' ); ?></label>
+					</th>
+					<td>
+						<label>
+							<input
+								type="checkbox"
+								id="ai-woo-assistant-enable_personalization"
+								name="ai_woo_assistant_settings[enable_personalization]"
+								value="1"
+								<?php checked( 'yes', $settings->get( 'enable_personalization' ) ); ?>
+							/>
+							<?php esc_html_e( 'Expose a get_user_context tool so the AI can personalise recommendations.', 'ai-woocommerce-assistant' ); ?>
+						</label>
+						<p class="description"><?php esc_html_e( 'Viewed products and search history are stored in the visitor\'s browser session only — no personal data is sent to the server unless the AI calls the tool.', 'ai-woocommerce-assistant' ); ?></p>
+					</td>
+				</tr>
+			</table>
+
+			<h3><?php esc_html_e( 'Upsell &amp; Cross-sell Intelligence', 'ai-woocommerce-assistant' ); ?></h3>
+			<p class="description">
+				<?php esc_html_e( 'Expose a get_related_products tool that returns the WooCommerce upsell and cross-sell products configured on each product. Requires MCP mode.', 'ai-woocommerce-assistant' ); ?>
+			</p>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row">
+						<label for="ai-woo-assistant-enable_upsell"><?php esc_html_e( 'Enable upsell / cross-sell', 'ai-woocommerce-assistant' ); ?></label>
+					</th>
+					<td>
+						<label>
+							<input
+								type="checkbox"
+								id="ai-woo-assistant-enable_upsell"
+								name="ai_woo_assistant_settings[enable_upsell]"
+								value="1"
+								<?php checked( 'yes', $settings->get( 'enable_upsell' ) ); ?>
+							/>
+							<?php esc_html_e( 'Let the AI suggest "You may also like…" and "Customers also bought…" items.', 'ai-woocommerce-assistant' ); ?>
+						</label>
+					</td>
 				</tr>
 			</table>
 		</div>

@@ -29,6 +29,7 @@ require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-quick-reply
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-admin-menu.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/woocommerce-handler.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/api-handler.php';
+require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-mcp-tools.php';
 require_once AI_WOO_ASSISTANT_PATH . 'includes/class-aiwoo-assistant-plugin.php';
 
 register_activation_hook(
