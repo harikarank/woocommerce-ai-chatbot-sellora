@@ -67,6 +67,16 @@ final class Settings {
 		// Enquiry form
 		'enquiry_title'           => '',
 		'enquiry_content'         => 'Let us know a bit more, and we\'ll suggest what fits best.',
+		// Product card display toggles (all off by default)
+		'card_show_price'         => 'no',
+		'card_show_stock'         => 'no',
+		'card_show_image'         => 'no',
+		'card_show_desc'          => 'no',
+		'card_show_view_link'     => 'no',
+		// No-match fallback text
+		'no_match_text'           => "We couldn't find an exact match. Please share more details.",
+		// Form border colour
+		'color_form_border'       => '',
 		// MCP / AI Intelligence
 		'enable_mcp'              => 'no',
 		'mcp_max_products'        => 5,
@@ -202,6 +212,17 @@ final class Settings {
 			? max( 10, min( 1000, absint( $input['max_message_length'] ) ) )
 			: $this->defaults['max_message_length'];
 
+		// Product card toggles.
+		$settings['card_show_price']     = ! empty( $input['card_show_price'] )     ? 'yes' : 'no';
+		$settings['card_show_stock']     = ! empty( $input['card_show_stock'] )     ? 'yes' : 'no';
+		$settings['card_show_image']     = ! empty( $input['card_show_image'] )     ? 'yes' : 'no';
+		$settings['card_show_desc']      = ! empty( $input['card_show_desc'] )      ? 'yes' : 'no';
+		$settings['card_show_view_link'] = ! empty( $input['card_show_view_link'] ) ? 'yes' : 'no';
+
+		$settings['no_match_text'] = isset( $input['no_match_text'] ) && '' !== trim( $input['no_match_text'] )
+			? sanitize_textarea_field( wp_unslash( $input['no_match_text'] ) )
+			: $this->defaults['no_match_text'];
+
 		$color_keys = array(
 			'color_primary_hover', 'color_surface', 'color_bg', 'color_border',
 			'color_text', 'color_text_soft', 'color_header_bg', 'color_header_text',
@@ -211,7 +232,7 @@ final class Settings {
 			'color_loading_bg', 'color_loading_text',
 			'color_counter_bg', 'color_counter_text',
 			'color_panel_border', 'color_header_border_bottom',
-			'color_form_bg',
+			'color_form_bg', 'color_form_border',
 		);
 
 		$settings['border_radius'] = isset( $input['border_radius'] )
@@ -487,6 +508,30 @@ final class Settings {
 				echo '<p class="description">' . esc_html__( 'Intro text shown above the enquiry form fields. Leave blank to hide.', 'ai-woocommerce-assistant' ) . '</p>';
 				break;
 
+			case 'card_show_price':
+			case 'card_show_stock':
+			case 'card_show_image':
+			case 'card_show_desc':
+			case 'card_show_view_link':
+				printf(
+					'<label><input type="checkbox" id="%1$s" name="%2$s" value="1" %3$s /> %4$s</label>',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					checked( 'yes', $value, false ),
+					esc_html__( 'Yes', 'ai-woocommerce-assistant' )
+				);
+				break;
+
+			case 'no_match_text':
+				printf(
+					'<textarea class="large-text" rows="2" id="%1$s" name="%2$s">%3$s</textarea>',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_textarea( (string) $value )
+				);
+				echo '<p class="description">' . esc_html__( 'Shown when no matching products are found.', 'ai-woocommerce-assistant' ) . '</p>';
+				break;
+
 			default:
 				// Generic colour field — handles all color_* keys.
 				if ( str_starts_with( $key, 'color_' ) ) {
@@ -515,6 +560,7 @@ final class Settings {
 						'color_panel_border'      => '#000000',
 						'color_header_border_bottom' => __( '(same as accent hover)', 'ai-woocommerce-assistant' ),
 						'color_form_bg'           => '#ffffff',
+						'color_form_border'       => '#000000',
 					);
 
 					$default_hint = $placeholder_map[ $key ] ?? '';

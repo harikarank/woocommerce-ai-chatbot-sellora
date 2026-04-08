@@ -44,6 +44,7 @@
 
 	/* Input form */
 	--aiwoo-form-bg:            #ffffff;
+	--aiwoo-form-border:        #000000;
 
 	/* Typing indicator */
 	--aiwoo-loading-bg:         var(--aiwoo-surface);
@@ -342,7 +343,7 @@
 	line-height: 1.58;
 }
 
-.aiwoo-message p            { margin: 0 0 7px; }
+.aiwoo-message p            { margin: 0 0 7px; line-height: 21px; }
 .aiwoo-message p:last-child { margin-bottom: 0; }
 
 /* Agent bubble — left tail */
@@ -402,6 +403,7 @@
 	border: 1px solid var(--aiwoo-border);
 	border-left: 3px solid var(--aiwoo-primary);
 	transition: background 0.14s ease, border-left-color 0.14s ease;
+	position: relative;
 }
 
 .aiwoo-product-card:hover {
@@ -409,7 +411,43 @@
 	border-left-color: var(--aiwoo-primary-dark);
 }
 
-.aiwoo-product-card__title { font-size: 13px; font-weight: 700; color: var(--aiwoo-copy); }
+.aiwoo-product-card__image {
+	width: 100%;
+	height: 90px;
+	object-fit: cover;
+	display: block;
+	margin-bottom: 4px;
+	border-radius: 2px;
+}
+
+.aiwoo-product-card__title {
+	font-size: 13px;
+	font-weight: 700;
+	color: var(--aiwoo-copy);
+	text-decoration: none;
+}
+
+/* Stretched link: makes the whole card clickable via the title anchor */
+.aiwoo-product-card__title::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+}
+
+.aiwoo-product-card__view {
+	display: inline-block;
+	margin-top: 5px;
+	font-size: 11.5px;
+	font-weight: 600;
+	color: var(--aiwoo-primary);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+	position: relative;
+	z-index: 1;
+}
+
+.aiwoo-product-card__view:hover { color: var(--aiwoo-primary-dark); }
+
 .aiwoo-product-card__price { font-size: 13px; font-weight: 700; color: var(--aiwoo-primary); }
 
 .aiwoo-product-card__stock {
@@ -424,7 +462,7 @@
 	font-size: 12px;
 	color: var(--aiwoo-copy-soft);
 	margin-top: 3px;
-	line-height: 1.45;
+	line-height: 14px;
 }
 
 /* ── Character counter ──────────────────────────────────────────────────── */
@@ -465,7 +503,7 @@
 .aiwoo-form {
 	display: grid;
 	grid-template-columns: 1fr auto;
-	border-top: 2px solid #000;
+	border-top: 1px solid var(--aiwoo-form-border);
 	background: var(--aiwoo-form-bg);
 	flex-shrink: 0;
 	overflow: visible;

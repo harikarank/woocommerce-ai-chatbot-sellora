@@ -123,9 +123,13 @@ final class Catalog_Service {
 	}
 
 	private function format_product( $product ) {
+		$image_id  = $product->get_image_id();
+		$image_url = $image_id ? (string) wp_get_attachment_image_url( $image_id, 'thumbnail' ) : '';
+
 		return array(
 			'id'                => $product->get_id(),
 			'name'              => $product->get_name(),
+			'image_url'         => $image_url,
 			'price'             => wp_strip_all_tags( wp_kses_post( wc_price( (float) $product->get_price() ) ) ),
 			'regular_price'     => $product->get_regular_price(),
 			'sale_price'        => $product->get_sale_price(),

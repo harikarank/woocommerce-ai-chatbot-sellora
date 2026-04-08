@@ -207,11 +207,16 @@
 		}
 	}
 
+	function updateSendButton() {
+		const isEmpty = elements.input.value.trim() === '';
+		elements.send.disabled = isEmpty || elements.root.classList.contains( 'is-loading' );
+	}
+
 	function setLoading( isLoading ) {
 		elements.loading.hidden = ! isLoading;
 		elements.root.classList.toggle( 'is-loading', isLoading );
-		elements.send.disabled = isLoading;
 		elements.input.disabled = isLoading;
+		updateSendButton();
 		if ( isLoading ) {
 			elements.messages.scrollTop = elements.messages.scrollHeight;
 		}
@@ -360,12 +365,14 @@
 		const value = elements.input.value;
 		elements.input.value = '';
 		adjustTextareaHeight();
+		updateSendButton();
 		handleSend( value );
 	} );
 
 	elements.input.addEventListener( 'input', function () {
 		adjustTextareaHeight();
 		updateCounter();
+		updateSendButton();
 	} );
 
 	elements.input.addEventListener( 'keydown', function ( event ) {
@@ -377,4 +384,5 @@
 
 	adjustTextareaHeight();
 	updateCounter();
+	updateSendButton();
 }() );

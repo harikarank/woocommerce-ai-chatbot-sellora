@@ -26,16 +26,21 @@ final class Chat_Service {
 	/** @var MCP_Tools */
 	private $mcp_tools;
 
+	/** @var AI_Error_Logger */
+	private $ai_error_logger;
+
 	public function __construct(
 		Settings $settings,
 		Catalog_Service $catalog_service,
 		Quick_Reply_Service $quick_reply_service,
-		MCP_Tools $mcp_tools
+		MCP_Tools $mcp_tools,
+		AI_Error_Logger $ai_error_logger
 	) {
-		$this->settings            = $settings;
-		$this->catalog_service     = $catalog_service;
+		$this->settings          = $settings;
+		$this->catalog_service   = $catalog_service;
 		$this->quick_reply_service = $quick_reply_service;
-		$this->mcp_tools           = $mcp_tools;
+		$this->mcp_tools         = $mcp_tools;
+		$this->ai_error_logger   = $ai_error_logger;
 	}
 
 	// -------------------------------------------------------------------------
@@ -48,10 +53,12 @@ final class Chat_Service {
 	 * @param string $message      Sanitised user input.
 	 * @param array  $history      Conversation history [{role, content}, ...].
 	 * @param array  $page_context Frontend page/product context.
+	 * @param string $session_id   Session identifier (for error logging).
+	 * @param string $ip_address   Visitor IP (for error logging).
 	 * @return array{message: string, html: bool, enquiry_form: bool, recommendations: array}
 	 * @throws \Exception On unrecoverable AI provider error.
 	 */
-	public function generate_reply( $message, array $history = array(), array $page_context = array() ) {
+	public function generate_reply( $message, array $history = array(), array $page_context = array(), $session_id = '', $ip_address = '' ) {
 		$message      = sanitize_textarea_field( $message );
 		$history      = $this->sanitize_history( $history );
 		$page_context = $this->sanitize_page_context( $page_context );
@@ -69,10 +76,10 @@ final class Chat_Service {
 
 		// ── 2. Route to MCP or legacy path ────────────────────────────────────
 		if ( 'yes' === $this->settings->get( 'enable_mcp' ) ) {
-			return $this->generate_reply_mcp( $message, $history, $page_context );
+			return $this->generate_reply_mcp( $message, $history, $page_context, $session_id, $ip_address );
 		}
 
-		return $this->generate_reply_legacy( $message, $history, $page_context );
+		return $this->generate_reply_legacy( $message, $history, $page_context, $session_id, $ip_address );
 	}
 
 	// -------------------------------------------------------------------------
@@ -89,7 +96,7 @@ final class Chat_Service {
 	 * @param array  $page_context
 	 * @return array
 	 */
-	private function generate_reply_mcp( string $message, array $history, array $page_context ): array {
+	private function generate_reply_mcp( string $message, array $history, array $page_context, string $session_id = '', string $ip_address = '' ): array {
 		// Give the tool executor access to the current request's context
 		// (viewed products, search history, cart) before calling any tool.
 		$this->mcp_tools->set_request_context( $page_context );
@@ -118,6 +125,7 @@ final class Chat_Service {
 			if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
 				error_log( 'Sellora AI fallback (MCP): ' . $e->getMessage() );
 			}
+			$this->ai_error_logger->log( $session_id, $ip_address, $message, 'mcp', $e->getMessage() );
 			$current_product_id = ! empty( $page_context['product']['id'] ) ? absint( $page_context['product']['id'] ) : 0;
 			$products           = $this->catalog_service->find_relevant_products( $message, $current_product_id );
 			return $this->build_product_fallback_response( $products );
@@ -218,13 +226,17 @@ final class Chat_Service {
 	 * @param array  $page_context
 	 * @return array
 	 */
-	private function generate_reply_legacy( string $message, array $history, array $page_context ): array {
+	private function generate_reply_legacy( string $message, array $history, array $page_context, string $session_id = '', string $ip_address = '' ): array {
 		$current_product_id = ! empty( $page_context['product']['id'] ) ? absint( $page_context['product']['id'] ) : 0;
 		$products           = $this->catalog_service->find_relevant_products( $message, $current_product_id );
 
 		if ( empty( $products ) ) {
+			$no_match = trim( (string) $this->settings->get( 'no_match_text' ) );
+			if ( '' === $no_match ) {
+				$no_match = __( "We couldn't find an exact match. Please share more details.", 'ai-woocommerce-assistant' );
+			}
 			return array(
-				'message'           => __( "We couldn't find an exact match. Please share more details.", 'ai-woocommerce-assistant' ),
+				'message'           => $no_match,
 				'html'              => false,
 				'enquiry_form'      => true,
 				'enquiry_form_html' => $this->get_enquiry_form_html(),
@@ -245,6 +257,7 @@ final class Chat_Service {
 			if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
 				error_log( 'Sellora AI fallback (legacy): ' . $e->getMessage() );
 			}
+			$this->ai_error_logger->log( $session_id, $ip_address, $message, 'legacy', $e->getMessage() );
 			return $this->build_product_fallback_response( $products );
 		}
 
@@ -404,8 +417,12 @@ final class Chat_Service {
 	 */
 	private function build_product_fallback_response( array $products ): array {
 		if ( empty( $products ) ) {
+			$no_match = trim( (string) $this->settings->get( 'no_match_text' ) );
+			if ( '' === $no_match ) {
+				$no_match = __( "We couldn't find an exact match. Please share more details.", 'ai-woocommerce-assistant' );
+			}
 			return array(
-				'message'           => __( "We couldn't find an exact match. Please share more details.", 'ai-woocommerce-assistant' ),
+				'message'           => $no_match,
 				'html'              => false,
 				'enquiry_form'      => true,
 				'enquiry_form_html' => $this->get_enquiry_form_html(),
@@ -427,20 +444,50 @@ final class Chat_Service {
 
 	/**
 	 * Render product cards for a slice of products (shared between MCP and legacy paths).
+	 * Which fields are shown is controlled by settings (all off by default).
 	 */
 	private function build_product_cards_html( array $products ): string {
 		if ( empty( $products ) ) {
 			return '';
 		}
 
+		$show_image     = 'yes' === $this->settings->get( 'card_show_image' );
+		$show_price     = 'yes' === $this->settings->get( 'card_show_price' );
+		$show_stock     = 'yes' === $this->settings->get( 'card_show_stock' );
+		$show_desc      = 'yes' === $this->settings->get( 'card_show_desc' );
+		$show_view_link = 'yes' === $this->settings->get( 'card_show_view_link' );
+
 		$html = '<div class="aiwoo-product-list">';
 		foreach ( array_slice( $products, 0, 3 ) as $product ) {
-			$html .= '<a class="aiwoo-product-card" href="' . esc_url( $product['permalink'] ) . '">';
-			$html .= '<strong class="aiwoo-product-card__title">' . esc_html( $product['name'] ) . '</strong>';
-			$html .= '<span class="aiwoo-product-card__price">' . esc_html( $product['price'] ) . '</span>';
-			$html .= '<span class="aiwoo-product-card__stock">' . esc_html( $this->format_stock_status( $product['stock_status'] ) ) . '</span>';
-			$html .= '<span class="aiwoo-product-card__desc">' . esc_html( wp_trim_words( $product['short_description'] ?: $product['description'], 18 ) ) . '</span>';
-			$html .= '</a>';
+			$permalink = esc_url( $product['permalink'] );
+			$html     .= '<div class="aiwoo-product-card">';
+
+			if ( $show_image && ! empty( $product['image_url'] ) ) {
+				$html .= '<img class="aiwoo-product-card__image" src="' . esc_url( $product['image_url'] ) . '" alt="' . esc_attr( $product['name'] ) . '" loading="lazy" />';
+			}
+
+			$html .= '<a class="aiwoo-product-card__title" href="' . $permalink . '">' . esc_html( $product['name'] ) . '</a>';
+
+			if ( $show_price ) {
+				$html .= '<span class="aiwoo-product-card__price">' . esc_html( $product['price'] ) . '</span>';
+			}
+
+			if ( $show_stock ) {
+				$html .= '<span class="aiwoo-product-card__stock">' . esc_html( $this->format_stock_status( $product['stock_status'] ) ) . '</span>';
+			}
+
+			if ( $show_desc ) {
+				$desc = wp_trim_words( $product['short_description'] ?: ( $product['description'] ?? '' ), 18 );
+				if ( '' !== $desc ) {
+					$html .= '<span class="aiwoo-product-card__desc">' . esc_html( $desc ) . '</span>';
+				}
+			}
+
+			if ( $show_view_link ) {
+				$html .= '<a class="aiwoo-product-card__view" href="' . $permalink . '">' . esc_html__( 'View details', 'ai-woocommerce-assistant' ) . '</a>';
+			}
+
+			$html .= '</div>';
 		}
 		$html .= '</div>';
 

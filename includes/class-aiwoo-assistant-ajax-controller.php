@@ -18,11 +18,14 @@ final class Ajax_Controller {
 
 	private $ip_blocker;
 
-	public function __construct( Settings $settings, Chat_Service $chat_service, Chat_Logger $chat_logger, IP_Blocker $ip_blocker ) {
-		$this->settings     = $settings;
-		$this->chat_service = $chat_service;
-		$this->chat_logger  = $chat_logger;
-		$this->ip_blocker   = $ip_blocker;
+	private $ai_error_logger;
+
+	public function __construct( Settings $settings, Chat_Service $chat_service, Chat_Logger $chat_logger, IP_Blocker $ip_blocker, AI_Error_Logger $ai_error_logger ) {
+		$this->settings         = $settings;
+		$this->chat_service     = $chat_service;
+		$this->chat_logger      = $chat_logger;
+		$this->ip_blocker       = $ip_blocker;
+		$this->ai_error_logger  = $ai_error_logger;
 
 		add_action( 'wp_ajax_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
 		add_action( 'wp_ajax_nopriv_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
@@ -123,9 +126,10 @@ final class Ajax_Controller {
 			$page_context = array();
 		}
 
+		$ip_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+
 		try {
-			$reply      = $this->chat_service->generate_reply( $message, $history, $page_context );
-			$ip_address = isset( $_SERVER['REMOTE_ADDR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REMOTE_ADDR'] ) ) : '';
+			$reply = $this->chat_service->generate_reply( $message, $history, $page_context, $session_id, $ip_address );
 			$this->chat_logger->log( $session_id, $ip_address, $message, $reply['message'] ?? '' );
 			wp_send_json_success( $reply );
 		} catch ( \Exception $exception ) {
@@ -134,6 +138,7 @@ final class Ajax_Controller {
 				// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
 				error_log( 'Sellora AI chat error: ' . $exception->getMessage() );
 			}
+			$this->ai_error_logger->log( $session_id, $ip_address, $message, 'ajax', $exception->getMessage() );
 			wp_send_json_error(
 				array(
 					'message' => __( 'The assistant is temporarily unavailable. Please try again.', 'ai-woocommerce-assistant' ),

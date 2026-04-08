@@ -30,6 +30,8 @@ final class Plugin {
 
 	private $mcp_tools;
 
+	private $ai_error_logger;
+
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -42,16 +44,18 @@ final class Plugin {
 		Chat_Logger::maybe_create_table();
 		Quick_Reply_Service::maybe_create_table();
 		Quick_Reply_Service::maybe_seed_defaults();
+		AI_Error_Logger::maybe_create_table();
 
 		$this->settings            = new Settings();
 		$this->catalog_service     = new Catalog_Service( $this->settings );
 		$this->quick_reply_service = new Quick_Reply_Service();
 		$this->mcp_tools           = new MCP_Tools( $this->settings, $this->catalog_service );
-		$this->chat_service        = new Chat_Service( $this->settings, $this->catalog_service, $this->quick_reply_service, $this->mcp_tools );
+		$this->ai_error_logger     = new AI_Error_Logger();
+		$this->chat_service        = new Chat_Service( $this->settings, $this->catalog_service, $this->quick_reply_service, $this->mcp_tools, $this->ai_error_logger );
 		$this->chat_logger         = new Chat_Logger();
 		$this->ip_blocker          = new IP_Blocker();
-		$this->ajax_controller     = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger, $this->ip_blocker );
-		$this->admin_menu          = new Admin_Menu( $this->settings, $this->chat_logger, $this->ip_blocker, $this->quick_reply_service );
+		$this->ajax_controller     = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger, $this->ip_blocker, $this->ai_error_logger );
+		$this->admin_menu          = new Admin_Menu( $this->settings, $this->chat_logger, $this->ip_blocker, $this->quick_reply_service, $this->ai_error_logger );
 
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'before_woocommerce_init', array( $this, 'declare_wc_compatibility' ) );
@@ -260,6 +264,12 @@ final class Plugin {
 			if ( ! empty( $value ) ) {
 				$vars[] = $css_var . ':' . $value;
 			}
+		}
+
+		// Form border color.
+		$form_border = sanitize_hex_color( (string) $this->settings->get( 'color_form_border' ) );
+		if ( ! empty( $form_border ) ) {
+			$vars[] = '--aiwoo-form-border:' . $form_border;
 		}
 
 		return '.aiwoo-widget{' . implode( ';', $vars ) . '}';

@@ -20,14 +20,11 @@ $display_subtitle = '' !== $panel_subtitle ? $panel_subtitle : __( 'Ask about pr
 		aria-controls="aiwoo-chat-panel"
 		aria-label="<?php esc_attr_e( 'Open chat assistant', 'ai-woocommerce-assistant' ); ?>"
 	>
-		<?php if ( ! empty( $icon_url ) ) : ?>
-			<img class="aiwoo-launcher__icon" src="<?php echo esc_url( $icon_url ); ?>" alt="" />
-		<?php else : ?>
-			<!-- Default chat icon -->
-			<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
-				<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-			</svg>
-		<?php endif; ?>
+		<img
+			class="aiwoo-launcher__icon"
+			src="<?php echo ! empty( $icon_url ) ? esc_url( $icon_url ) : esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/favicon.svg' ); ?>"
+			alt=""
+		/>
 	</button>
 
 	<!-- Chat panel -->
@@ -36,9 +33,11 @@ $display_subtitle = '' !== $panel_subtitle ? $panel_subtitle : __( 'Ask about pr
 		<!-- Header -->
 		<header class="aiwoo-panel__header">
 			<div class="aiwoo-panel__header-info">
-				<?php if ( ! empty( $company_logo ) ) : ?>
-					<img class="aiwoo-panel__logo" src="<?php echo esc_url( $company_logo ); ?>" alt="" />
-				<?php endif; ?>
+				<img
+					class="aiwoo-panel__logo"
+					src="<?php echo ! empty( $company_logo ) ? esc_url( $company_logo ) : esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>"
+					alt="<?php echo esc_attr( $company_name ); ?>"
+				/>
 				<div>
 					<h2><?php echo esc_html( $display_title ); ?></h2>
 					<p>

@@ -45,25 +45,36 @@ The current implementation is structured as a production-style plugin scaffold w
   chat-session-detail-page.php
   enquiries-page.php
   ip-blocklist-page.php
+  quick-replies-page.php
+  top-requests-page.php
+  ai-errors-page.php          ← session 17
+  info-page.php               ← session 18
 /assets/
   /css/
     style.css
   /js/
     admin.js
     chat.js
+  /img/
+    logo.svg                  ← session 18 (default panel logo)
+    favicon.svg               ← session 18 (default launcher icon)
 /includes/
   api-handler.php
   woocommerce-handler.php
   class-aiwoo-assistant-admin-menu.php
   class-aiwoo-assistant-ajax-controller.php
+  class-aiwoo-assistant-ai-error-logger.php  ← session 17
   class-aiwoo-assistant-catalog-service.php
   class-aiwoo-assistant-chat-logger.php
   class-aiwoo-assistant-chat-service.php
   class-aiwoo-assistant-claude-provider.php
+  class-aiwoo-assistant-gemini-provider.php
   class-aiwoo-assistant-ip-blocker.php
+  class-aiwoo-assistant-mcp-tools.php
   class-aiwoo-assistant-openai-provider.php
   class-aiwoo-assistant-plugin.php
   class-aiwoo-assistant-provider-interface.php
+  class-aiwoo-assistant-quick-reply-service.php
   class-aiwoo-assistant-settings.php
 /templates/
   chat-widget.php
@@ -672,6 +683,76 @@ During implementation, the plugin files were syntax-checked with:
 No live WordPress or WooCommerce runtime test is recorded in this repository context file.
 
 ## Change Log
+
+### 2026-04-08 (session 18) — UI refinements, product card controls, send button, branding, info page
+
+**CSS fixes:**
+- `.aiwoo-message p` — `line-height: 21px`
+- `.aiwoo-product-card__desc` — `line-height: 14px`
+- `.aiwoo-form` — border changed from `2px solid #000` to `1px solid var(--aiwoo-form-border)` (new CSS var, default `#000000`)
+
+**Product card display toggles:**
+- 5 new settings: `card_show_price`, `card_show_stock`, `card_show_image`, `card_show_desc`, `card_show_view_link` — all default `'no'`
+- Settings exposed under Settings → Widget → Product Cards section
+- `Catalog_Service::format_product()` now includes `image_url` field (`wp_get_attachment_image_url()` at `thumbnail` size)
+- `Chat_Service::build_product_cards_html()` checks each setting; cards changed from `<a>` wrappers to `<div>` with stretched-link CSS pattern (`.aiwoo-product-card__title::after { position:absolute; inset:0 }` makes whole card clickable via title link; `.aiwoo-product-card__view` uses `z-index:1` to sit above stretched link)
+- New CSS: `.aiwoo-product-card__image` (100% width, 90px height, object-fit:cover), `.aiwoo-product-card__view` (underline link, z-index:1)
+
+**No-match fallback text configurable:**
+- New `no_match_text` setting (default: `"We couldn't find an exact match. Please share more details."`)
+- Used in `generate_reply_legacy()` (empty products) and `build_product_fallback_response()` (no products in fallback)
+- Exposed in Settings → Widget tab
+
+**Form border color setting:**
+- New `color_form_border` setting → `--aiwoo-form-border` CSS var, emitted by `Plugin::build_color_css()`
+- Exposed in Settings → Appearance → Input & Send Button section
+
+**Send button disabled when empty:**
+- New `updateSendButton()` in `chat.js` — disables when `input.value.trim() === ''` or `is-loading` class present
+- Called on: `input` event, `setLoading()`, form `submit`, and initial setup
+
+**SVG branding defaults:**
+- `assets/img/favicon.svg` — used as default launcher icon (fallback when `chat_icon` setting empty)
+- `assets/img/logo.svg` — used as default panel header logo (fallback when `company_logo` setting empty)
+- Applied in `templates/chat-widget.php` via `AI_WOO_ASSISTANT_URL` constant; default inline SVG removed
+
+**Plugin Guide page:**
+- New admin page `Sellora AI → Plugin Guide` (`admin/info-page.php`)
+- Covers: overview, AI providers table, widget settings, product cards, MCP mode, quick replies, IP blocklist, chat history & logs, enquiries, system prompt customisation
+- Registered via `render_info()` in `Admin_Menu`; hook added to `get_all_hooks()`
+
+**Files changed:** `assets/css/style.css`, `assets/js/chat.js`, `templates/chat-widget.php`, `includes/class-aiwoo-assistant-settings.php`, `includes/class-aiwoo-assistant-catalog-service.php`, `includes/class-aiwoo-assistant-chat-service.php`, `includes/class-aiwoo-assistant-plugin.php`, `includes/class-aiwoo-assistant-admin-menu.php`, `admin/settings-page.php` | **New:** `admin/info-page.php`
+
+---
+
+### 2026-04-08 (session 17) — AI Error Logger
+
+**New DB table `{prefix}aiwoo_ai_error_logs`:**
+- Schema: `id`, `session_id`, `ip_address`, `user_message`, `error_context` (varchar 20), `error_message`, `created_at`
+- Versioned via `aiwoo_ai_error_log_db_version` option; created via `dbDelta`; dropped in `uninstall.php`
+- Three `error_context` values: `ajax` (hard failure — user saw error), `mcp` (soft MCP fallback), `legacy` (soft legacy fallback)
+
+**New class `AI_Error_Logger`:**
+- `create_table()`, `maybe_create_table()`, `drop_table()` — same schema-management pattern as Chat_Logger
+- `log($session_id, $ip_address, $user_message, $error_context, $error_message)` — silently swallowed
+- `get_errors($per_page, $offset)` — latest first
+- `count_errors()` — for pagination
+
+**Wiring:**
+- Injected into `Ajax_Controller`, `Chat_Service`, and `Admin_Menu` as constructor dependency
+- `Chat_Service::generate_reply()` now accepts `$session_id` and `$ip_address` params (forwarded from `Ajax_Controller`) and passes to `generate_reply_mcp()` / `generate_reply_legacy()`
+- `Ajax_Controller`: `$ip_address` hoisted before try block; `$this->ai_error_logger->log(...)` called in catch block (context: `ajax`)
+- `Chat_Service` MCP catch: logs with context `mcp`; legacy catch: logs with context `legacy`
+- `Plugin::__construct()`: calls `AI_Error_Logger::maybe_create_table()`; activation hook calls `AI_Error_Logger::create_table()`
+
+**Admin page `Sellora AI → AI Error Log`:**
+- Template: `admin/ai-errors-page.php`
+- Type badges: red = "No Response", amber = "MCP Fallback" / "Legacy Fallback"
+- Shows: time, type, IP, user message (truncated 120), error detail (truncated 300); 30/page
+
+**Files changed:** `woocommerce-ai-chatbot-sellora.php`, `includes/class-aiwoo-assistant-plugin.php`, `includes/class-aiwoo-assistant-ajax-controller.php`, `includes/class-aiwoo-assistant-chat-service.php`, `includes/class-aiwoo-assistant-admin-menu.php` | **New:** `includes/class-aiwoo-assistant-ai-error-logger.php`, `admin/ai-errors-page.php`
+
+---
 
 ### 2026-04-08 (session 16) — AI failure fallback + chat_placeholder setting
 

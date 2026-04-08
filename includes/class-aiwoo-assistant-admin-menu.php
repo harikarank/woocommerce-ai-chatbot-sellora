@@ -23,21 +23,30 @@ final class Admin_Menu {
 	/** @var Quick_Reply_Service */
 	private $quick_reply_service;
 
+	/** @var AI_Error_Logger */
+	private $ai_error_logger;
+
 	/** Hook suffixes returned by add_submenu_page — used for asset enqueueing. */
 	private $hook_chat_history   = '';
 	private $hook_enquiries       = '';
 	private $hook_ip_blocklist    = '';
 	private $hook_quick_replies   = '';
 	private $hook_top_requests    = '';
+	private $hook_ai_errors       = '';
+	private $hook_info            = '';
 	private $hook_settings        = '';
 
-	public function __construct( Settings $settings, Chat_Logger $chat_logger, IP_Blocker $ip_blocker, Quick_Reply_Service $quick_reply_service ) {
+	public function __construct( Settings $settings, Chat_Logger $chat_logger, IP_Blocker $ip_blocker, Quick_Reply_Service $quick_reply_service, AI_Error_Logger $ai_error_logger ) {
 		$this->settings            = $settings;
 		$this->chat_logger         = $chat_logger;
 		$this->ip_blocker          = $ip_blocker;
 		$this->quick_reply_service = $quick_reply_service;
+		$this->ai_error_logger     = $ai_error_logger;
 
-		add_action( 'admin_menu', array( $this, 'register_menus' ) );
+		add_action( 'admin_menu',     array( $this, 'register_menus' ) );
+		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_node' ), 100 );
+		add_action( 'admin_head',     array( $this, 'admin_bar_styles' ) );
+		add_action( 'wp_head',        array( $this, 'admin_bar_styles' ) );
 	}
 
 	// -------------------------------------------------------------------------
@@ -45,13 +54,20 @@ final class Admin_Menu {
 	// -------------------------------------------------------------------------
 
 	public function register_menus() {
+		$svg_path = AI_WOO_ASSISTANT_PATH . 'assets/img/favicon.svg';
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
+		$svg_data = file_exists( $svg_path ) ? file_get_contents( $svg_path ) : '';
+		$menu_icon = '' !== $svg_data
+			? 'data:image/svg+xml;base64,' . base64_encode( $svg_data )
+			: 'dashicons-format-chat';
+
 		add_menu_page(
 			__( 'Sellora AI', 'ai-woocommerce-assistant' ),
 			__( 'Sellora AI', 'ai-woocommerce-assistant' ),
 			'manage_options',
 			'sellora-ai',
 			array( $this, 'render_chat_history' ),
-			'dashicons-format-chat',
+			$menu_icon,
 			58
 		);
 
@@ -101,6 +117,24 @@ final class Admin_Menu {
 			array( $this, 'render_top_requests' )
 		);
 
+		$this->hook_ai_errors = (string) add_submenu_page(
+			'sellora-ai',
+			__( 'AI Error Log', 'ai-woocommerce-assistant' ),
+			__( 'AI Error Log', 'ai-woocommerce-assistant' ),
+			'manage_options',
+			'sellora-ai-errors',
+			array( $this, 'render_ai_errors' )
+		);
+
+		$this->hook_info = (string) add_submenu_page(
+			'sellora-ai',
+			__( 'Plugin Guide', 'ai-woocommerce-assistant' ),
+			__( 'Plugin Guide', 'ai-woocommerce-assistant' ),
+			'manage_options',
+			'sellora-ai-info',
+			array( $this, 'render_info' )
+		);
+
 		$this->hook_settings = (string) add_submenu_page(
 			'sellora-ai',
 			__( 'Sellora AI Settings', 'ai-woocommerce-assistant' ),
@@ -120,7 +154,7 @@ final class Admin_Menu {
 	}
 
 	public function get_all_hooks() {
-		return array( $this->hook_chat_history, $this->hook_enquiries, $this->hook_ip_blocklist, $this->hook_quick_replies, $this->hook_top_requests, $this->hook_settings );
+		return array( $this->hook_chat_history, $this->hook_enquiries, $this->hook_ip_blocklist, $this->hook_quick_replies, $this->hook_top_requests, $this->hook_ai_errors, $this->hook_info, $this->hook_settings );
 	}
 
 	// -------------------------------------------------------------------------
@@ -337,6 +371,101 @@ final class Admin_Menu {
 
 		$quick_reply_service = $this->quick_reply_service;
 		require AI_WOO_ASSISTANT_PATH . 'admin/quick-replies-page.php';
+	}
+
+	// -------------------------------------------------------------------------
+	// Admin bar
+	// -------------------------------------------------------------------------
+
+	public function add_admin_bar_node( \WP_Admin_Bar $wp_admin_bar ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$icon_url = esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/favicon.svg' );
+		$title    = '<img src="' . $icon_url . '" class="aiwoo-ab-icon" alt="" />'
+			. '<span class="ab-label">' . esc_html__( 'Sellora AI', 'ai-woocommerce-assistant' ) . '</span>';
+
+		$wp_admin_bar->add_node(
+			array(
+				'id'     => 'sellora-ai-bar',
+				'title'  => $title,
+				'href'   => admin_url( 'admin.php?page=sellora-ai' ),
+				'meta'   => array(
+					'title' => esc_attr__( 'Sellora AI Dashboard', 'ai-woocommerce-assistant' ),
+				),
+			)
+		);
+
+		// Quick-access sub-items.
+		$subitems = array(
+			array(
+				'id'     => 'sellora-ai-bar-chat',
+				'title'  => esc_html__( 'Chat History', 'ai-woocommerce-assistant' ),
+				'href'   => admin_url( 'admin.php?page=sellora-ai' ),
+			),
+			array(
+				'id'     => 'sellora-ai-bar-errors',
+				'title'  => esc_html__( 'AI Error Log', 'ai-woocommerce-assistant' ),
+				'href'   => admin_url( 'admin.php?page=sellora-ai-errors' ),
+			),
+			array(
+				'id'     => 'sellora-ai-bar-settings',
+				'title'  => esc_html__( 'Settings', 'ai-woocommerce-assistant' ),
+				'href'   => admin_url( 'admin.php?page=ai-woo-assistant' ),
+			),
+		);
+
+		foreach ( $subitems as $item ) {
+			$wp_admin_bar->add_node(
+				array_merge( $item, array( 'parent' => 'sellora-ai-bar' ) )
+			);
+		}
+	}
+
+	/**
+	 * Tiny CSS for the admin bar icon — hooked on both admin_head and wp_head
+	 * so it shows on the frontend admin bar too.
+	 */
+	public function admin_bar_styles() {
+		if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		?>
+		<style>
+			#wpadminbar #wp-admin-bar-sellora-ai-bar .aiwoo-ab-icon {
+				display: inline-block;
+				width: 18px;
+				height: 18px;
+				vertical-align: middle;
+				margin-right: 5px;
+				margin-top: -2px;
+				position: relative;
+				top: -1px;
+			}
+		</style>
+		<?php
+	}
+
+	public function render_info() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view this page.', 'ai-woocommerce-assistant' ) );
+		}
+		require AI_WOO_ASSISTANT_PATH . 'admin/info-page.php';
+	}
+
+	public function render_ai_errors() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view this page.', 'ai-woocommerce-assistant' ) );
+		}
+
+		$per_page     = 30;
+		$current_page = isset( $_GET['paged'] ) ? max( 1, absint( $_GET['paged'] ) ) : 1;
+		$offset       = ( $current_page - 1 ) * $per_page;
+		$total        = $this->ai_error_logger->count_errors();
+		$errors       = $this->ai_error_logger->get_errors( $per_page, $offset );
+
+		require AI_WOO_ASSISTANT_PATH . 'admin/ai-errors-page.php';
 	}
 
 	public function render_enquiries() {

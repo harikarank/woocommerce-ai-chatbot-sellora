@@ -116,6 +116,35 @@ defined( 'ABSPATH' ) || exit;
 					<th scope="row"><label for="ai-woo-assistant-enquiry_content"><?php esc_html_e( 'Enquiry form intro text', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'enquiry_content' ) ); ?></td>
 				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-no_match_text"><?php esc_html_e( 'No-match fallback text', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'no_match_text' ) ); ?></td>
+				</tr>
+			</table>
+
+			<h3><?php esc_html_e( 'Product Cards', 'ai-woocommerce-assistant' ); ?></h3>
+			<p class="description"><?php esc_html_e( 'Choose which fields to display on product recommendation cards. All off by default for a compact look.', 'ai-woocommerce-assistant' ); ?></p>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Show price', 'ai-woocommerce-assistant' ); ?></th>
+					<td><?php $settings->render_field( array( 'key' => 'card_show_price' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Show stock status', 'ai-woocommerce-assistant' ); ?></th>
+					<td><?php $settings->render_field( array( 'key' => 'card_show_stock' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Show thumbnail image', 'ai-woocommerce-assistant' ); ?></th>
+					<td><?php $settings->render_field( array( 'key' => 'card_show_image' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Show short description', 'ai-woocommerce-assistant' ); ?></th>
+					<td><?php $settings->render_field( array( 'key' => 'card_show_desc' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><?php esc_html_e( 'Show "View details" link', 'ai-woocommerce-assistant' ); ?></th>
+					<td><?php $settings->render_field( array( 'key' => 'card_show_view_link' ) ); ?></td>
+				</tr>
 			</table>
 		</div>
 
@@ -217,6 +246,10 @@ defined( 'ABSPATH' ) || exit;
 				<tr>
 					<th scope="row"><label for="ai-woo-assistant-color_form_bg"><?php esc_html_e( 'Form area background', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'color_form_bg' ) ); ?></td>
+				</tr>
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_form_border"><?php esc_html_e( 'Form top border color', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_form_border' ) ); ?></td>
 				</tr>
 				<tr>
 					<th scope="row"><label for="ai-woo-assistant-color_input_bg"><?php esc_html_e( 'Input background', 'ai-woocommerce-assistant' ); ?></label></th>
