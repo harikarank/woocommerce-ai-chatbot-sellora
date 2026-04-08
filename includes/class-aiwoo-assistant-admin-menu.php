@@ -53,13 +53,15 @@ final class Admin_Menu {
 	// Menu registration
 	// -------------------------------------------------------------------------
 
+	/**
+	 * Inline SVG for the admin menu icon — avoids file I/O on every admin page load.
+	 * Using a hardcoded base64-encoded data URI is the WordPress-recommended approach
+	 * for custom SVG menu icons (see add_menu_page() docs).
+	 */
+	private const MENU_ICON_SVG = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 53.32 41.6"><defs><style>.aiwoo-mi-a{fill:#7310ec}.aiwoo-mi-b,.aiwoo-mi-c,.aiwoo-mi-d{fill:none;stroke:#7310ec;stroke-miterlimit:10}.aiwoo-mi-b{stroke-width:1.5px}.aiwoo-mi-c{stroke-width:2px}</style></defs><path class="aiwoo-mi-a" d="M29.15 19.71a8.28 8.28 0 0 1 .7-3.4 8.79 8.79 0 0 1 4.67-4.67 8.28 8.28 0 0 1 3.4-.7H51.34V16.8H37.92a2.86 2.86 0 0 0-1.14.22 2.85 2.85 0 0 0-1.55 1.55A2.93 2.93 0 0 0 35 19.71a3 3 0 0 0 .22 1.16 2.86 2.86 0 0 0 .62.93 2.94 2.94 0 0 0 .93.63 2.86 2.86 0 0 0 1.14.22h5.86a8.69 8.69 0 0 1 3.41.68A8.71 8.71 0 0 1 51.86 28a8.8 8.8 0 0 1 0 6.83A8.73 8.73 0 0 1 50 37.61a8.87 8.87 0 0 1-2.8 1.89 8.52 8.52 0 0 1-3.41.69h-13V34.34h13a3 3 0 0 0 2.07-.85 3 3 0 0 0 .62-3.21 2.85 2.85 0 0 0-1.55-1.55 2.9 2.9 0 0 0-1.14-.22H37.92a8.44 8.44 0 0 1-3.4-.7 8.86 8.86 0 0 1-4.67-4.68 8.41 8.41 0 0 1-.7-3.42Z"/><polyline class="aiwoo-mi-b" points="44.74 25.6 30.74 25.6 26.74 25.6"/><circle class="aiwoo-mi-b" cx="23.74" cy="25.6" r="3"/><polyline class="aiwoo-mi-c" points="46.24 38.1 31.24 38.1 28.24 38.1 23.24 33.1 18.24 33.1"/><circle class="aiwoo-mi-c" cx="13.74" cy="33.6" r="4.5"/><polyline class="aiwoo-mi-c" points="42.36 14.31 29.74 14.31 23.74 8.6"/><circle class="aiwoo-mi-c" cx="20.74" cy="5.6" r="4"/><line class="aiwoo-mi-d" x1="33.74" y1="18.6" x2="5.74" y2="18.6"/><circle class="aiwoo-mi-d" cx="3.74" cy="18.6" r="2.5"/></svg>';
+
 	public function register_menus() {
-		$svg_path = AI_WOO_ASSISTANT_PATH . 'assets/img/favicon.svg';
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_get_contents_file_get_contents
-		$svg_data = file_exists( $svg_path ) ? file_get_contents( $svg_path ) : '';
-		$menu_icon = '' !== $svg_data
-			? 'data:image/svg+xml;base64,' . base64_encode( $svg_data )
-			: 'dashicons-format-chat';
+		$menu_icon = 'data:image/svg+xml;base64,' . base64_encode( self::MENU_ICON_SVG );
 
 		add_menu_page(
 			__( 'Sellora AI', 'ai-woocommerce-assistant' ),

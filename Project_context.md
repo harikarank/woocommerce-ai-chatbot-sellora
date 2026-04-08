@@ -684,6 +684,51 @@ No live WordPress or WooCommerce runtime test is recorded in this repository con
 
 ## Change Log
 
+### 2026-04-08 (session 20) — WordPress.org release hardening
+
+**Security red flags removed:**
+- `file_get_contents()` — was used in `Admin_Menu::register_menus()` to read `favicon.svg` for the menu icon. Replaced with `private const MENU_ICON_SVG` — a hardcoded SVG string on the class. `base64_encode( self::MENU_ICON_SVG )` is called at menu registration time. Zero file I/O, no scanner flags.
+- SVG internal CSS class names renamed `.cls-1/.cls-2/.cls-3/.cls-4` → `.aiwoo-mi-a/.aiwoo-mi-b/.aiwoo-mi-c/.aiwoo-mi-d` to avoid potential class name collisions when the SVG is inlined.
+- Confirmed zero `eval()`, `base64_decode`, `exec`, `shell_exec`, `passthru` across the entire codebase (grep scan result: no matches).
+
+**`uninstall.php` completed:**
+- Added `delete_option( 'aiwoo_ai_error_log_db_version' )` (was missing for AI error log table).
+- Added `DROP TABLE IF EXISTS {prefix}aiwoo_ai_error_logs` (was missing).
+- All 3 custom tables now fully cleaned on deletion: `aiwoo_chat_logs`, `aiwoo_quick_replies`, `aiwoo_ai_error_logs`.
+- All options cleaned: `ai_woo_assistant_settings`, `aiwoo_blocked_ips`, `aiwoo_db_version`, `aiwoo_qr_db_version`, `aiwoo_qr_seeded`, `aiwoo_ai_error_log_db_version`.
+
+**`readme.txt` rewritten for WordPress.org:**
+- **Third-Party Services section** added (WordPress.org hard requirement for plugins calling external APIs). Discloses all three AI provider endpoints, privacy policies, and terms of use links: OpenAI (`api.openai.com/v1/responses`), Anthropic (`api.anthropic.com/v1/messages`), Google (`generativelanguage.googleapis.com/v1beta/...`).
+- Short description ≤ 150 chars ✓
+- Tags reduced to ≤ 5 (WordPress.org limit) ✓
+- All new features documented in Description and Changelog (MCP, product cards, AI error log, branding, send button, info page, etc.)
+- FAQ entries: GPL compatibility, personal data storage, Third-Party data, send button, Quick Replies, AI error log, product cards, MCP mode.
+- Screenshots section with 9 entries.
+
+**Files changed:** `includes/class-aiwoo-assistant-admin-menu.php`, `uninstall.php`, `readme.txt`
+
+---
+
+### 2026-04-08 (session 19) — Admin backend branding
+
+**Admin page headings:**
+- All 9 admin pages (`chat-history-page.php`, `chat-session-detail-page.php`, `enquiries-page.php`, `ip-blocklist-page.php`, `quick-replies-page.php`, `top-requests-page.php`, `ai-errors-page.php`, `info-page.php`, `settings-page.php`) updated: the `"Sellora AI — "` text prefix replaced with `<img src="logo.svg" style="height:28px">` using flex layout.
+- `chat-session-detail-page.php`: "Back" link moved out of `<h1>` to a standalone `<a>` tag below the heading for cleaner markup.
+
+**Admin sidebar menu icon:**
+- `dashicons-format-chat` replaced with a base64-encoded data URI built from `private const MENU_ICON_SVG`.
+
+**Admin topbar (`WP_Admin_Bar`) node:**
+- `add_admin_bar_node()` adds a `sellora-ai-bar` node with `favicon.svg` icon + label "Sellora AI".
+- Three sub-items: Chat History (`sellora-ai`), AI Error Log (`sellora-ai-errors`), Settings (`ai-woo-assistant`).
+- Visible only to `manage_options` users; shown on both frontend and backend admin bars.
+- Tiny CSS block (`<style>`) injected via `admin_head` + `wp_head` for icon sizing and alignment.
+- Hook order: `admin_bar_menu` priority 100 (after WordPress core nodes).
+
+**Files changed:** `admin/chat-history-page.php`, `admin/chat-session-detail-page.php`, `admin/enquiries-page.php`, `admin/ip-blocklist-page.php`, `admin/quick-replies-page.php`, `admin/top-requests-page.php`, `admin/ai-errors-page.php`, `admin/info-page.php`, `admin/settings-page.php`, `includes/class-aiwoo-assistant-admin-menu.php`
+
+---
+
 ### 2026-04-08 (session 18) — UI refinements, product card controls, send button, branding, info page
 
 **CSS fixes:**
