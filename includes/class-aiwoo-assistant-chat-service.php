@@ -101,17 +101,27 @@ final class Chat_Service {
 			return $mcp_tools_ref->execute( $name, $args );
 		};
 
-		$provider = make_ai_provider( $this->settings );
+		try {
+			$provider = make_ai_provider( $this->settings );
 
-		$assistant_message = $provider->generate_with_tools(
-			array(
-				'settings'     => $this->settings,
-				'instructions' => $this->build_instructions_mcp(),
-				'messages'     => $this->build_messages_mcp( $message, $history, $page_context ),
-			),
-			$tools,
-			$tool_executor
-		);
+			$assistant_message = $provider->generate_with_tools(
+				array(
+					'settings'     => $this->settings,
+					'instructions' => $this->build_instructions_mcp(),
+					'messages'     => $this->build_messages_mcp( $message, $history, $page_context ),
+				),
+				$tools,
+				$tool_executor
+			);
+		} catch ( \Exception $e ) {
+			// AI unavailable — fall back to catalog search with product cards.
+			if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+				error_log( 'Sellora AI fallback (MCP): ' . $e->getMessage() );
+			}
+			$current_product_id = ! empty( $page_context['product']['id'] ) ? absint( $page_context['product']['id'] ) : 0;
+			$products           = $this->catalog_service->find_relevant_products( $message, $current_product_id );
+			return $this->build_product_fallback_response( $products );
+		}
 
 		// If get_products was called, render product cards under the AI text.
 		$fetched_products = $this->mcp_tools->get_fetched_products();
@@ -228,7 +238,15 @@ final class Chat_Service {
 			'input'        => $this->build_input( $message, $history, $page_context, $products ),
 		);
 
-		$assistant_message = call_ai_model( $message, $payload );
+		try {
+			$assistant_message = call_ai_model( $message, $payload );
+		} catch ( \Exception $e ) {
+			// AI unavailable — fall back to product cards without AI text.
+			if ( defined( 'WP_DEBUG_LOG' ) && WP_DEBUG_LOG ) {
+				error_log( 'Sellora AI fallback (legacy): ' . $e->getMessage() );
+			}
+			return $this->build_product_fallback_response( $products );
+		}
 
 		return array(
 			'message'         => $this->build_product_response_html( $assistant_message, $products ),
@@ -377,6 +395,34 @@ final class Chat_Service {
 		$html  = wpautop( esc_html( $assistant_message ) );
 		$html .= $this->build_product_cards_html( $products );
 		return $html;
+	}
+
+	/**
+	 * Build a fallback response when the AI provider is unavailable.
+	 * Shows product cards from catalog search with a friendly message,
+	 * or the enquiry form if no products were found.
+	 */
+	private function build_product_fallback_response( array $products ): array {
+		if ( empty( $products ) ) {
+			return array(
+				'message'           => __( "We couldn't find an exact match. Please share more details.", 'ai-woocommerce-assistant' ),
+				'html'              => false,
+				'enquiry_form'      => true,
+				'enquiry_form_html' => $this->get_enquiry_form_html(),
+				'recommendations'   => array(),
+			);
+		}
+
+		$fallback_text = __( 'Here are some products that might match what you\'re looking for:', 'ai-woocommerce-assistant' );
+		$html          = wpautop( esc_html( $fallback_text ) );
+		$html         .= $this->build_product_cards_html( $products );
+
+		return array(
+			'message'         => $html,
+			'html'            => true,
+			'enquiry_form'    => false,
+			'recommendations' => $products,
+		);
 	}
 
 	/**

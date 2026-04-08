@@ -32,7 +32,8 @@
       "Bash(php -l includes/class-aiwoo-assistant-ajax-controller.php)",
       "Bash(php -l admin/settings-page.php)",
       "Bash(php -l woocommerce-ai-chatbot-sellora.php)",
-      "Bash(node --check assets/js/chat.js)"
+      "Bash(node --check assets/js/chat.js)",
+      "Bash(php -l templates/chat-widget.php)"
     ]
   }
 }

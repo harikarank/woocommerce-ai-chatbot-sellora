@@ -22,6 +22,7 @@ final class Settings {
 		'welcome_message'      => 'Hello! How can I assist you today?',
 		'panel_title'          => '',
 		'panel_subtitle'       => 'What are you looking for today…',
+		'chat_placeholder'     => 'Ask about products…',
 		'company_logo'         => '',
 		'employee_photo'       => '',
 		'primary_color'        => '#9a162d',
@@ -130,6 +131,7 @@ final class Settings {
 			'max_context_products' => __( 'Catalog products in context', 'ai-woocommerce-assistant' ),
 			'panel_title'          => __( 'Panel header title', 'ai-woocommerce-assistant' ),
 			'panel_subtitle'       => __( 'Panel header subtitle', 'ai-woocommerce-assistant' ),
+			'chat_placeholder'     => __( 'Chat input placeholder', 'ai-woocommerce-assistant' ),
 			'company_logo'         => __( 'Panel header logo', 'ai-woocommerce-assistant' ),
 			'employee_photo'       => __( 'Assistant avatar photo', 'ai-woocommerce-assistant' ),
 			'primary_color'        => __( 'Widget accent color', 'ai-woocommerce-assistant' ),
@@ -184,6 +186,7 @@ final class Settings {
 		$settings['welcome_message']      = isset( $input['welcome_message'] ) ? sanitize_textarea_field( wp_unslash( $input['welcome_message'] ) ) : $this->defaults['welcome_message'];
 		$settings['panel_title']          = isset( $input['panel_title'] ) ? sanitize_text_field( wp_unslash( $input['panel_title'] ) ) : '';
 		$settings['panel_subtitle']       = isset( $input['panel_subtitle'] ) ? sanitize_text_field( wp_unslash( $input['panel_subtitle'] ) ) : $this->defaults['panel_subtitle'];
+		$settings['chat_placeholder']     = isset( $input['chat_placeholder'] ) ? sanitize_text_field( wp_unslash( $input['chat_placeholder'] ) ) : $this->defaults['chat_placeholder'];
 		$settings['company_logo']         = isset( $input['company_logo'] ) ? esc_url_raw( wp_unslash( $input['company_logo'] ) ) : '';
 		$settings['employee_photo']       = isset( $input['employee_photo'] ) ? esc_url_raw( wp_unslash( $input['employee_photo'] ) ) : '';
 		$settings['primary_color']        = isset( $input['primary_color'] ) ? sanitize_hex_color( $input['primary_color'] ) : $this->defaults['primary_color'];
@@ -369,6 +372,7 @@ final class Settings {
 				break;
 
 			case 'panel_subtitle':
+			case 'chat_placeholder':
 				printf(
 					'<input type="text" class="regular-text" id="%1$s" name="%2$s" value="%3$s" />',
 					esc_attr( $field_id ),

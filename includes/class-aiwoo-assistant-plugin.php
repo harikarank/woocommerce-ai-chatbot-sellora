@@ -156,7 +156,9 @@ final class Plugin {
 					'title'           => __( 'Sellora AI Shopping Assistant', 'ai-woocommerce-assistant' ),
 					'companyName'     => get_bloginfo( 'name' ),
 					'subtitle'        => __( 'Ask about products, comparisons, and buying advice.', 'ai-woocommerce-assistant' ),
-					'placeholder'     => __( 'Ask about products...', 'ai-woocommerce-assistant' ),
+					'placeholder'     => '' !== (string) $this->settings->get( 'chat_placeholder' )
+							? (string) $this->settings->get( 'chat_placeholder' )
+							: __( 'Ask about products...', 'ai-woocommerce-assistant' ),
 					'send'            => __( 'Send', 'ai-woocommerce-assistant' ),
 					'open'            => __( 'Open Sellora AI chat assistant', 'ai-woocommerce-assistant' ),
 					'close'           => __( 'Close chat assistant', 'ai-woocommerce-assistant' ),
@@ -272,11 +274,12 @@ final class Plugin {
 			return;
 		}
 
-		$icon_url      = (string) $this->settings->get( 'chat_icon' );
-		$company_name  = get_bloginfo( 'name' );
-		$panel_title   = (string) $this->settings->get( 'panel_title' );
-		$panel_subtitle = (string) $this->settings->get( 'panel_subtitle' );
-		$company_logo  = (string) $this->settings->get( 'company_logo' );
+		$icon_url         = (string) $this->settings->get( 'chat_icon' );
+		$company_name     = get_bloginfo( 'name' );
+		$panel_title      = (string) $this->settings->get( 'panel_title' );
+		$panel_subtitle   = (string) $this->settings->get( 'panel_subtitle' );
+		$chat_placeholder = (string) $this->settings->get( 'chat_placeholder' );
+		$company_logo     = (string) $this->settings->get( 'company_logo' );
 		require AI_WOO_ASSISTANT_PATH . 'templates/chat-widget.php';
 	}
 }

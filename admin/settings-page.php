@@ -89,6 +89,10 @@ defined( 'ABSPATH' ) || exit;
 					<td><?php $settings->render_field( array( 'key' => 'panel_subtitle' ) ); ?></td>
 				</tr>
 				<tr>
+					<th scope="row"><label for="ai-woo-assistant-chat_placeholder"><?php esc_html_e( 'Chat input placeholder', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'chat_placeholder' ) ); ?></td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="ai-woo-assistant-company_logo"><?php esc_html_e( 'Panel header logo', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'company_logo' ) ); ?></td>
 				</tr>

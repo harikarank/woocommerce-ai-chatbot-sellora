@@ -264,6 +264,16 @@ Returned response shape:
 - `enquiry_form = false`
 - `recommendations = [...]`
 
+### If AI provider fails (no credits, API error, etc.)
+
+Flow (both legacy and MCP paths):
+- catch AI exception, log error server-side
+- run catalog search with user message (MCP path does this on failure; legacy path already has products)
+- if products found: return fallback text `"Here are some products that might match…"` + product cards
+- if no products found: return enquiry form
+
+This ensures the customer always sees useful results even when the AI is unavailable.
+
 ### If no matching products are found
 
 Flow:
@@ -662,6 +672,17 @@ During implementation, the plugin files were syntax-checked with:
 No live WordPress or WooCommerce runtime test is recorded in this repository context file.
 
 ## Change Log
+
+### 2026-04-08 (session 16) — AI failure fallback + chat_placeholder setting
+
+**AI failure graceful fallback:**
+- **Before:** When the AI provider failed (no credits, bad API key, network error), the user saw a dead-end error: "The assistant is temporarily unavailable. Please try again."
+- **After:** Both legacy and MCP paths catch AI exceptions and fall back to catalog search. If products are found, the user sees "Here are some products that might match what you're looking for:" with product cards. If no products are found, the enquiry form is shown. Errors are still logged server-side.
+- New private method `Chat_Service::build_product_fallback_response()` handles the fallback for both paths.
+
+**Separate `chat_placeholder` setting:**
+- **Before:** Panel header subtitle and chat input placeholder were conflated — both used the same hardcoded text.
+- **After:** New `chat_placeholder` setting (default: `"Ask about products…"`). Editable under Settings → Widget tab, independent of `panel_subtitle`. Used in the widget template `<textarea placeholder>` and the localized JS `AIWooAssistant.strings.placeholder`.
 
 ### 2026-04-08 (session 15) — MCP tool-calling architecture
 

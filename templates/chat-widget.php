@@ -76,7 +76,7 @@ $display_subtitle = '' !== $panel_subtitle ? $panel_subtitle : __( 'Ask about pr
 			<textarea
 				class="aiwoo-input"
 				rows="1"
-				placeholder="<?php esc_attr_e( 'Ask about products…', 'ai-woocommerce-assistant' ); ?>"
+				placeholder="<?php echo esc_attr( '' !== $chat_placeholder ? $chat_placeholder : __( 'Ask about products…', 'ai-woocommerce-assistant' ) ); ?>"
 			></textarea>
 			<button class="aiwoo-send" type="submit" aria-label="<?php esc_attr_e( 'Send message', 'ai-woocommerce-assistant' ); ?>">
 				<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true">
