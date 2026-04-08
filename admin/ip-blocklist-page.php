@@ -23,7 +23,10 @@ $status_key = isset( $_GET['aiwoo_ip_msg'] ) ? sanitize_key( $_GET['aiwoo_ip_msg
 $blocked    = $ip_blocker->get_list();
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'Sellora AI — IP Blocklist', 'ai-woocommerce-assistant' ); ?></h1>
+	<h1 style="display:flex;align-items:center;gap:10px;">
+		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:28px;width:auto;" />
+		<?php esc_html_e( 'IP Blocklist', 'ai-woocommerce-assistant' ); ?>
+	</h1>
 	<p><?php esc_html_e( 'Visitors whose IP address matches an entry below will not see the chat widget and their AJAX requests will be silently rejected. Entries are matched as exact addresses or CIDR ranges (IPv4 and IPv6 supported).', 'ai-woocommerce-assistant' ); ?></p>
 
 	<?php if ( '' !== $status_key && isset( $msg_map[ $status_key ] ) ) : ?>

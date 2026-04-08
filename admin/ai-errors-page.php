@@ -23,7 +23,10 @@ $context_labels = array(
 );
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'Sellora AI — AI Error Log', 'ai-woocommerce-assistant' ); ?></h1>
+	<h1 style="display:flex;align-items:center;gap:10px;">
+		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:28px;width:auto;" />
+		<?php esc_html_e( 'AI Error Log', 'ai-woocommerce-assistant' ); ?>
+	</h1>
 	<p style="color:#6b7280;margin-top:4px;">
 		<?php esc_html_e( 'Failed or degraded AI responses. Visible to admins only — users never see these details.', 'ai-woocommerce-assistant' ); ?>
 	</p>

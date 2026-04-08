@@ -9,7 +9,10 @@
 defined( 'ABSPATH' ) || exit;
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'Sellora AI — WooCommerce Chatbot & Shopping Assistant', 'ai-woocommerce-assistant' ); ?></h1>
+	<h1 style="display:flex;align-items:center;gap:10px;">
+		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:28px;width:auto;" />
+		<?php esc_html_e( 'WooCommerce Chatbot & Shopping Assistant', 'ai-woocommerce-assistant' ); ?>
+	</h1>
 
 	<nav class="nav-tab-wrapper" id="aiwoo-tab-nav" aria-label="<?php esc_attr_e( 'Settings sections', 'ai-woocommerce-assistant' ); ?>">
 		<a href="#" class="nav-tab nav-tab-active" data-aiwoo-tab="general"><?php esc_html_e( 'General', 'ai-woocommerce-assistant' ); ?></a>

@@ -8,9 +8,9 @@
 defined( 'ABSPATH' ) || exit;
 ?>
 <div class="wrap">
-	<h1 style="display:flex;align-items:center;gap:12px;">
-		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:32px;width:auto;" />
-		<?php esc_html_e( 'Sellora AI — Plugin Guide', 'ai-woocommerce-assistant' ); ?>
+	<h1 style="display:flex;align-items:center;gap:10px;">
+		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:28px;width:auto;" />
+		<?php esc_html_e( 'Plugin Guide', 'ai-woocommerce-assistant' ); ?>
 	</h1>
 	<p style="color:#6b7280;margin-top:4px;"><?php esc_html_e( 'Everything you need to know to set up and get the most from Sellora AI.', 'ai-woocommerce-assistant' ); ?></p>
 

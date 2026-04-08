@@ -36,8 +36,9 @@ $is_form = in_array( $view, array( 'add', 'edit' ), true );
 $rules   = ( ! $is_form ) ? $quick_reply_service->get_all() : array();
 ?>
 <div class="wrap">
-	<h1>
-		<?php esc_html_e( 'Sellora AI — Quick Replies', 'ai-woocommerce-assistant' ); ?>
+	<h1 style="display:flex;align-items:center;gap:10px;">
+		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:28px;width:auto;" />
+		<?php esc_html_e( 'Quick Replies', 'ai-woocommerce-assistant' ); ?>
 		<?php if ( ! $is_form ) : ?>
 			<a href="<?php echo esc_url( admin_url( 'admin.php?page=sellora-ai-quick-replies&action=add' ) ); ?>" class="page-title-action">
 				<?php esc_html_e( 'Add New', 'ai-woocommerce-assistant' ); ?>

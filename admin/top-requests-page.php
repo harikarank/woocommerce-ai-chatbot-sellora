@@ -29,7 +29,10 @@ $base_url     = admin_url( 'admin.php?page=sellora-ai-top-requests' );
 $export_nonce = wp_create_nonce( 'aiwoo_export_top_requests' );
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'Sellora AI — Top Requests', 'ai-woocommerce-assistant' ); ?></h1>
+	<h1 style="display:flex;align-items:center;gap:10px;">
+		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:28px;width:auto;" />
+		<?php esc_html_e( 'Top Requests', 'ai-woocommerce-assistant' ); ?>
+	</h1>
 	<p><?php esc_html_e( 'See which messages users send most often. Convert high-frequency AI responses into Quick Reply rules to reduce AI usage.', 'ai-woocommerce-assistant' ); ?></p>
 
 	<?php if ( '' !== $status_key && isset( $msg_map[ $status_key ] ) ) : ?>

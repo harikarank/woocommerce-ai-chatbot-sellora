@@ -30,7 +30,10 @@ $filter_query = http_build_query(
 );
 ?>
 <div class="wrap">
-	<h1><?php esc_html_e( 'Sellora AI — Enquiries', 'ai-woocommerce-assistant' ); ?></h1>
+	<h1 style="display:flex;align-items:center;gap:10px;">
+		<img src="<?php echo esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/logo.svg' ); ?>" alt="Sellora AI" style="height:28px;width:auto;" />
+		<?php esc_html_e( 'Enquiries', 'ai-woocommerce-assistant' ); ?>
+	</h1>
 
 	<!-- Filter form -->
 	<form method="get" action="<?php echo esc_url( $base_url ); ?>" style="margin:16px 0;">
