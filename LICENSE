@@ -6,6 +6,9 @@ Copyright (c) 2026 Harikaran. All rights reserved.
 Website : https://selloraai.harikaran.com
 Email   : kharykaran@gmail.com
 
+IMPORTANT: This LICENSE file must remain included in the project at all times.
+You may not modify, rename, move, or remove this file under any circumstance.
+
 1. GRANT OF LICENSE
 
 This license grants any person a free, non-exclusive, non-transferable right
@@ -29,7 +32,15 @@ You may NOT, without prior written permission from the developer (Harikaran):
   f) Reverse-engineer, decompile, or disassemble the plugin for the purpose
      of creating a competing product.
 
-3. DEVELOPER PERMISSION
+3. LICENSE FILE INTEGRITY
+
+This LICENSE file is a required part of the plugin distribution. You may not
+modify, edit, rename, relocate, or delete this file. Any copy or installation
+of the plugin that does not include this LICENSE file in its original,
+unaltered form is in violation of this license and constitutes unauthorized
+use.
+
+4. DEVELOPER PERMISSION
 
 Any use beyond the scope of Section 1 — including but not limited to
 modification, duplication, resale, white-labeling, or redistribution —
@@ -41,13 +52,13 @@ To request permission, contact:
   kharykaran@gmail.com
   https://selloraai.harikaran.com
 
-4. OWNERSHIP
+5. OWNERSHIP
 
 The plugin, including all source code, design, documentation, and associated
 assets, remains the sole intellectual property of Harikaran. This license
 does not transfer any ownership rights.
 
-5. NO WARRANTY
+6. NO WARRANTY
 
 THE PLUGIN IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
@@ -55,13 +66,14 @@ FITNESS FOR A PARTICULAR PURPOSE, AND NON-INFRINGEMENT. IN NO EVENT SHALL
 THE DEVELOPER BE LIABLE FOR ANY CLAIM, DAMAGES, OR OTHER LIABILITY ARISING
 FROM THE USE OF THE PLUGIN.
 
-6. TERMINATION
+7. TERMINATION
 
 This license is effective until terminated. It terminates automatically if
-you breach any of its terms. Upon termination, you must destroy all copies
-of the plugin in your possession.
+you breach any of its terms, including removal or modification of this
+LICENSE file. Upon termination, you must destroy all copies of the plugin
+in your possession.
 
-7. GOVERNING LAW
+8. GOVERNING LAW
 
 This license shall be governed by and construed in accordance with the laws
 of India.
