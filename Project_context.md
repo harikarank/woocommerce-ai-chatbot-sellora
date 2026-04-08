@@ -564,6 +564,48 @@ No live WordPress or WooCommerce runtime test is recorded in this repository con
 
 ## Change Log
 
+### 2026-04-08 (session 13)
+
+- **Top Requests analytics page** (`sellora-ai-top-requests`) — aggregates `aiwoo_chat_logs` by normalized user message, shows frequency, response preview, type badge, and "Save as Quick Reply" inline form.
+  - Renderer `render_top_requests()` in `Admin_Menu`: builds WHERE (date filter), HAVING (search), fetches up to 500 rows via `GROUP BY LOWER(TRIM(user_message)) ORDER BY total DESC`, applies response-type filter in PHP using `Quick_Reply_Service::get_response_set()` hash set, paginates 20/page.
+  - Response type detection: exact match of `last_response` against all active QR responses → "Quick Reply" or "AI Response" badge. 🔥 Popular badge when count ≥ 100.
+  - Inline "Save as Quick Reply" form: toggle show/hide per row via vanilla JS. Pre-fills keywords (from query) and response (from last_response). POSTs to `admin_post_aiwoo_save_quick_reply_from_ai`.
+  - `handle_save_from_ai()` in `Quick_Reply_Service`: validates, calls `keyword_exists()` for duplicate check, auto-generates title from first 5 words of source query, inserts via `insert()`.
+  - `keyword_exists()`: loads all active rule keywords from DB, builds flat hash set, checks each input keyword.
+  - `get_response_set()`: returns `array<string, true>` of all active QR response strings for O(1) type detection.
+  - Filters: search (HAVING LIKE), response type (PHP), date (last 7/30 days or all time).
+  - CSV export: nonce-protected `?export=csv` parameter streams up to 5000 rows.
+  - Template: `admin/top-requests-page.php`.
+
+### 2026-04-08 (session 12)
+
+- **Quick Reply seed data expanded** — 50 additional default rules added to `insert_defaults()` (total 69). Categories: Product Discovery (new arrivals, trending, best seller, compare, which is better), Pricing & Offers (any offer, best price, price drop, emi, no cost emi), Delivery (fast delivery, same day, charges, international, delayed), Order & Account (cancel, change address, modify, invoice, login problem), Returns (return status, refund status, damaged product, wrong item, missing item), Product Info (specs, size, color, material, brand), Trust (genuine, quality, reviews, rating, safe payment), Conversion (should i buy, worth it, recommend me, gift, combo), Support (callback, whatsapp, email support, working hours, location), Fallback (confused, help, not sure, show options, browse). Priorities assigned by business impact: critical issues 82–85, order management 78–83, high-intent 70–75, discovery/offers 63–73, info/engagement 57–67.
+
+### 2026-04-08 (session 11)
+
+- **Quick Reply default seeding** — 19 predefined rules auto-inserted when the table is empty.
+  - `seed_on_activation()` (static, no option guard): called from activation hook after `create_table()`. Counts rows; if 0, inserts all defaults and sets `aiwoo_qr_seeded` option. Safe on re-activation (skips if data exists).
+  - `maybe_seed_defaults()` (static, option-guarded): called from `Plugin::__construct()` on every request. Reads autoloaded option `aiwoo_qr_seeded`; returns immediately if '1'. Only hits DB (SHOW TABLES + COUNT) when option is absent. Sets option after first check regardless of insert path.
+  - `insert_defaults()` (private static): inserts all 19 rules via `$wpdb->insert()`, then flushes `aiwoo_quick_replies_cache` transient.
+  - `drop_table()` updated to also delete `aiwoo_qr_seeded` option.
+  - `uninstall.php` updated to delete `aiwoo_qr_seeded`.
+  - Default rules cover: Greeting (100), Small Talk (90), Order Tracking (85), Complaint (85), Product Search (80), COD (75), Returns (75), Price (70), Budget (70), Stock (70), Delivery (70), Recommendations (70), Support (65), Bulk (65), Discounts (65), Warranty (60), Payment (60), Thank You (50), Goodbye (50).
+
+### 2026-04-08 (session 10)
+
+- **Quick Reply System** — rule-based keyword matching that intercepts messages before any catalog search or AI call.
+  - New DB table `{prefix}aiwoo_quick_replies`: id, title, keywords (CSV), response, match_type (contains/exact), priority, status, created_at. Created via `dbDelta`, versioned with `aiwoo_qr_db_version` option.
+  - New class `includes/class-aiwoo-assistant-quick-reply-service.php` (`Quick_Reply_Service`): `find_match()` normalises message to lowercase/trim, iterates active rules ordered by priority DESC, splits CSV keywords, tests `str_contains` or `===` per match_type. Returns first match response or null. Rules cached via transient `aiwoo_quick_replies_cache` (300s). Cache flushed on any insert/update/delete. Exposes `handle_save` and `handle_delete` as `admin_post_*` action handlers.
+  - `Chat_Service` — injected with `Quick_Reply_Service` via constructor. `generate_reply()` calls `find_match()` immediately after sanitisation; if non-null, returns early with `html=false, enquiry_form=false, recommendations=[]`.
+  - `Admin_Menu` — accepts `Quick_Reply_Service` as 4th constructor arg. New submenu `sellora-ai-quick-replies` → `render_quick_replies()`.
+  - New admin template `admin/quick-replies-page.php`: list view with Title/Keywords/Match type/Response preview/Priority/Status/Edit+Delete actions; add/edit form with all fields + nonce + capability check. Add = `?action=add`, Edit = `?action=edit&id=N`.
+  - `woocommerce-ai-chatbot-sellora.php` — require new class, activation hook creates both tables.
+  - `uninstall.php` — drops `aiwoo_quick_replies` table, deletes `aiwoo_qr_db_version` option and transient.
+
+### 2026-04-08 (session 9)
+
+- **Corner radius setting** — new `border_radius` setting (integer 0–24, default `0`). Outputs `--aiwoo-radius: Npx` CSS variable via `build_color_css()`. Applied to `.aiwoo-panel`, `.aiwoo-message--assistant` (three corners), `.aiwoo-message--user` (three corners), `.aiwoo-enquiry`. `0` = sharp (current default), `24` = fully rounded. Exposed in Appearance tab under new "Shape" section.
+
 ### 2026-04-08 (session 8)
 
 - **CSS tweaks** — `.aiwoo-enquiry` added `margin: 20px 0px`. `.aiwoo-enquiry__title` added `line-height: 20px`. `.aiwoo-enquiry-form` added `margin-top: 15px`. `.aiwoo-enquiry-form textarea` added `resize: none`. `.aiwoo-panel__header h2` changed to `font-weight: 500; font-size: 16px`.

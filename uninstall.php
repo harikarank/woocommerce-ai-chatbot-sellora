@@ -13,13 +13,23 @@ delete_option( 'ai_woo_assistant_settings' );
 // Remove IP blocklist.
 delete_option( 'aiwoo_blocked_ips' );
 
-// Remove DB version flag.
+// Remove DB version and seed flags.
 delete_option( 'aiwoo_db_version' );
+delete_option( 'aiwoo_qr_db_version' );
+delete_option( 'aiwoo_qr_seeded' );
+
+// Remove quick reply transient cache.
+delete_transient( 'aiwoo_quick_replies_cache' );
+
+global $wpdb;
 
 // Drop chat log table.
-global $wpdb;
 // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
 $wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'aiwoo_chat_logs`' );
+
+// Drop quick replies table.
+// phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.DirectDatabaseQuery
+$wpdb->query( 'DROP TABLE IF EXISTS `' . $wpdb->prefix . 'aiwoo_quick_replies`' );
 
 // Remove all stored enquiry posts and their meta.
 $enquiry_ids = get_posts(

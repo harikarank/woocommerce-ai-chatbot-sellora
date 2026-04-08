@@ -17,10 +17,11 @@ final class Settings {
 		'provider'             => 'openai',
 		'openai_api_key'       => '',
 		'openai_model'         => 'gpt-5.4-mini',
-		'system_prompt'        => "You are a professional customer support assistant for an eCommerce company.\nYour role is to help users find products and answer queries naturally.\n\nRules:\n- Always respond like a human sales assistant.\n- Be polite, concise, and helpful.\n- Recommend products when relevant.\n- If no product available, ask for more details.\n- Do not hallucinate products.",
-		'welcome_message'      => 'Hello. I can help you explore products, compare options, and answer store questions.',
+//		'system_prompt'        => "You are a professional customer support assistant for an eCommerce company.\nYour role is to help users find products and answer queries naturally.\n\nRules:\n- Always respond like a human sales assistant.\n- Be polite, concise, and helpful.\n- Recommend products when relevant.\n- If no product available, ask for more details.\n- Do not hallucinate products.",
+		'system_prompt' 	   => "You are a friendly and professional customer support assistant for an eCommerce store.\n\nYour goal is to help customers naturally - like a real human sales assistant.\n\nBehavior rules:\n- Start with a simple, warm greeting.\n- Do NOT recommend products immediately unless the user clearly asks or shows buying intent.\n- First understand what the user needs by asking 1–2 relevant questions.\n- Keep responses short, natural, and conversational (avoid scripted or robotic tone).\n- Only recommend products after understanding the requirement.\n- When recommending, show 2–4 relevant items max with short explanations.\n- If unsure, ask clarifying questions instead of guessing.\n- Never overwhelm the user with too much information.\n- Avoid mentioning internal details like pricing currency unless asked.\n\nConversation style:\n- Sound human, not like a bot.\n- Avoid long paragraphs.\n- Use simple, friendly language.\n\nExamples:\n\nUser: Hi\nAssistant: Hi! 😊 How can I help you today?",
+		'welcome_message'      => 'Hello! How can I assist you today?',
 		'panel_title'          => '',
-		'panel_subtitle'       => 'Ask about products, comparisons, and buying advice.',
+		'panel_subtitle'       => 'What are you looking for today…',
 		'company_logo'         => '',
 		'employee_photo'       => '',
 		'primary_color'        => '#9a162d',
@@ -60,9 +61,11 @@ final class Settings {
 		'color_panel_border'      => '',
 		'color_header_border_bottom' => '',
 		'color_form_bg'           => '',
+		// Widget shape
+		'border_radius'           => 0,
 		// Enquiry form
 		'enquiry_title'           => '',
-		'enquiry_content'         => 'Please share a few more details and our team will follow up with the best option.',
+		'enquiry_content'         => 'Let us know a bit more, and we\'ll suggest what fits best.',
 	);
 
 	public function __construct() {
@@ -202,6 +205,10 @@ final class Settings {
 			'color_panel_border', 'color_header_border_bottom',
 			'color_form_bg',
 		);
+
+		$settings['border_radius'] = isset( $input['border_radius'] )
+			? max( 0, min( 24, absint( $input['border_radius'] ) ) )
+			: $this->defaults['border_radius'];
 
 		$settings['enquiry_title']   = isset( $input['enquiry_title'] ) ? sanitize_text_field( wp_unslash( $input['enquiry_title'] ) ) : '';
 		$settings['enquiry_content'] = isset( $input['enquiry_content'] ) ? sanitize_textarea_field( wp_unslash( $input['enquiry_content'] ) ) : $this->defaults['enquiry_content'];
@@ -430,6 +437,16 @@ final class Settings {
 					esc_attr( (string) $value )
 				);
 				echo '<p class="description">' . esc_html__( 'Characters allowed per chat message (10–1000). Requests exceeding this limit will be auto-blocked by IP.', 'ai-woocommerce-assistant' ) . '</p>';
+				break;
+
+			case 'border_radius':
+				printf(
+					'<input type="number" min="0" max="24" id="%1$s" name="%2$s" value="%3$s" /> px',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value )
+				);
+				echo '<p class="description">' . esc_html__( '0 = sharp corners, 24 = fully rounded. Controls the panel, message bubbles, and enquiry box.', 'ai-woocommerce-assistant' ) . '</p>';
 				break;
 
 			case 'enquiry_title':

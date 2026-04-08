@@ -26,6 +26,8 @@ final class Plugin {
 
 	private $admin_menu;
 
+	private $quick_reply_service;
+
 	public static function instance() {
 		if ( null === self::$instance ) {
 			self::$instance = new self();
@@ -36,14 +38,17 @@ final class Plugin {
 
 	private function __construct() {
 		Chat_Logger::maybe_create_table();
+		Quick_Reply_Service::maybe_create_table();
+		Quick_Reply_Service::maybe_seed_defaults();
 
-		$this->settings        = new Settings();
-		$this->catalog_service = new Catalog_Service( $this->settings );
-		$this->chat_service    = new Chat_Service( $this->settings, $this->catalog_service );
-		$this->chat_logger     = new Chat_Logger();
-		$this->ip_blocker      = new IP_Blocker();
-		$this->ajax_controller = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger, $this->ip_blocker );
-		$this->admin_menu      = new Admin_Menu( $this->settings, $this->chat_logger, $this->ip_blocker );
+		$this->settings            = new Settings();
+		$this->catalog_service     = new Catalog_Service( $this->settings );
+		$this->quick_reply_service = new Quick_Reply_Service();
+		$this->chat_service        = new Chat_Service( $this->settings, $this->catalog_service, $this->quick_reply_service );
+		$this->chat_logger         = new Chat_Logger();
+		$this->ip_blocker          = new IP_Blocker();
+		$this->ajax_controller     = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger, $this->ip_blocker );
+		$this->admin_menu          = new Admin_Menu( $this->settings, $this->chat_logger, $this->ip_blocker, $this->quick_reply_service );
 
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'before_woocommerce_init', array( $this, 'declare_wc_compatibility' ) );
@@ -212,7 +217,11 @@ final class Plugin {
 			$primary = '#9a162d';
 		}
 
-		$vars = array( '--aiwoo-primary:' . $primary );
+		$radius = max( 0, min( 24, absint( $this->settings->get( 'border_radius' ) ) ) );
+		$vars   = array(
+			'--aiwoo-primary:' . $primary,
+			'--aiwoo-radius:' . $radius . 'px',
+		);
 
 		$map = array(
 			'color_primary_hover'     => '--aiwoo-primary-dark',

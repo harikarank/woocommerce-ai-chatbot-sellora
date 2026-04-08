@@ -14,15 +14,31 @@ final class Chat_Service {
 
 	private $catalog_service;
 
-	public function __construct( Settings $settings, Catalog_Service $catalog_service ) {
-		$this->settings        = $settings;
-		$this->catalog_service = $catalog_service;
+	private $quick_reply_service;
+
+	public function __construct( Settings $settings, Catalog_Service $catalog_service, Quick_Reply_Service $quick_reply_service ) {
+		$this->settings            = $settings;
+		$this->catalog_service     = $catalog_service;
+		$this->quick_reply_service = $quick_reply_service;
 	}
 
 	public function generate_reply( $message, array $history = array(), array $page_context = array() ) {
-		$message  = sanitize_textarea_field( $message );
-		$history  = $this->sanitize_history( $history );
+		$message      = sanitize_textarea_field( $message );
+		$history      = $this->sanitize_history( $history );
 		$page_context = $this->sanitize_page_context( $page_context );
+
+		// ── Quick reply check — runs before catalog search and AI call ────────
+		$quick_response = $this->quick_reply_service->find_match( $message );
+
+		if ( null !== $quick_response ) {
+			return array(
+				'message'         => $quick_response,
+				'html'            => false,
+				'enquiry_form'    => false,
+				'recommendations' => array(),
+			);
+		}
+		// ── End quick reply check ─────────────────────────────────────────────
 
 		$current_product_id = ! empty( $page_context['product']['id'] ) ? absint( $page_context['product']['id'] ) : 0;
 		$products           = $this->catalog_service->find_relevant_products( $message, $current_product_id );

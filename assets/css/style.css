@@ -57,6 +57,9 @@
 	--aiwoo-panel-border:           #000000;
 	--aiwoo-header-border-bottom:   var(--aiwoo-primary-dark);
 
+	/* Radius / sharpness */
+	--aiwoo-radius: 0px;
+
 	/* Shadow */
 	--aiwoo-shadow-lift:   4px 4px 0 rgba(0, 0, 0, 0.25);
 	--aiwoo-shadow-panel:  10px 10px 0 rgba(0, 0, 0, 0.18);
@@ -125,6 +128,7 @@
 	width: min(388px, calc(100vw - 20px));
 	height: min(580px, calc(100vh - 110px));
 	border: 2px solid var(--aiwoo-panel-border);
+	border-radius: var(--aiwoo-radius);
 	background: var(--aiwoo-surface);
 	box-shadow: var(--aiwoo-shadow-panel);
 	display: flex;
@@ -345,7 +349,7 @@
 .aiwoo-message--assistant {
 	background: var(--aiwoo-agent-bubble-bg);
 	color: var(--aiwoo-agent-bubble-text);
-	border-radius: 14px 14px 14px 4px;
+	border-radius: var(--aiwoo-radius) var(--aiwoo-radius) var(--aiwoo-radius) 4px;
 	box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -365,7 +369,7 @@
 .aiwoo-message--user {
 	background: var(--aiwoo-user-bubble-bg);
 	color: var(--aiwoo-user-bubble-text);
-	border-radius: 14px 14px 4px 14px;
+	border-radius: var(--aiwoo-radius) var(--aiwoo-radius) 4px var(--aiwoo-radius);
 	box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
 }
 
@@ -515,6 +519,7 @@
 	background: var(--aiwoo-surface);
 	border: 1px solid var(--aiwoo-border);
 	border-left: 3px solid var(--aiwoo-primary);
+	border-radius: var(--aiwoo-radius);
 	padding: 14px;
 	margin: 20px 0px;
 }

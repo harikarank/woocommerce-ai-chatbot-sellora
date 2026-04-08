@@ -20,16 +20,22 @@ final class Admin_Menu {
 	/** @var IP_Blocker */
 	private $ip_blocker;
 
-	/** Hook suffixes returned by add_submenu_page — used for asset enqueueing. */
-	private $hook_chat_history = '';
-	private $hook_enquiries    = '';
-	private $hook_ip_blocklist = '';
-	private $hook_settings     = '';
+	/** @var Quick_Reply_Service */
+	private $quick_reply_service;
 
-	public function __construct( Settings $settings, Chat_Logger $chat_logger, IP_Blocker $ip_blocker ) {
-		$this->settings    = $settings;
-		$this->chat_logger = $chat_logger;
-		$this->ip_blocker  = $ip_blocker;
+	/** Hook suffixes returned by add_submenu_page — used for asset enqueueing. */
+	private $hook_chat_history   = '';
+	private $hook_enquiries       = '';
+	private $hook_ip_blocklist    = '';
+	private $hook_quick_replies   = '';
+	private $hook_top_requests    = '';
+	private $hook_settings        = '';
+
+	public function __construct( Settings $settings, Chat_Logger $chat_logger, IP_Blocker $ip_blocker, Quick_Reply_Service $quick_reply_service ) {
+		$this->settings            = $settings;
+		$this->chat_logger         = $chat_logger;
+		$this->ip_blocker          = $ip_blocker;
+		$this->quick_reply_service = $quick_reply_service;
 
 		add_action( 'admin_menu', array( $this, 'register_menus' ) );
 	}
@@ -77,6 +83,24 @@ final class Admin_Menu {
 			array( $this, 'render_ip_blocklist' )
 		);
 
+		$this->hook_quick_replies = (string) add_submenu_page(
+			'sellora-ai',
+			__( 'Quick Replies', 'ai-woocommerce-assistant' ),
+			__( 'Quick Replies', 'ai-woocommerce-assistant' ),
+			'manage_options',
+			'sellora-ai-quick-replies',
+			array( $this, 'render_quick_replies' )
+		);
+
+		$this->hook_top_requests = (string) add_submenu_page(
+			'sellora-ai',
+			__( 'Top Requests', 'ai-woocommerce-assistant' ),
+			__( 'Top Requests', 'ai-woocommerce-assistant' ),
+			'manage_options',
+			'sellora-ai-top-requests',
+			array( $this, 'render_top_requests' )
+		);
+
 		$this->hook_settings = (string) add_submenu_page(
 			'sellora-ai',
 			__( 'Sellora AI Settings', 'ai-woocommerce-assistant' ),
@@ -96,7 +120,7 @@ final class Admin_Menu {
 	}
 
 	public function get_all_hooks() {
-		return array( $this->hook_chat_history, $this->hook_enquiries, $this->hook_ip_blocklist, $this->hook_settings );
+		return array( $this->hook_chat_history, $this->hook_enquiries, $this->hook_ip_blocklist, $this->hook_quick_replies, $this->hook_top_requests, $this->hook_settings );
 	}
 
 	// -------------------------------------------------------------------------
@@ -141,6 +165,162 @@ final class Admin_Menu {
 
 		$ip_blocker = $this->ip_blocker;
 		require AI_WOO_ASSISTANT_PATH . 'admin/ip-blocklist-page.php';
+	}
+
+	public function render_top_requests() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view this page.', 'ai-woocommerce-assistant' ) );
+		}
+
+		global $wpdb;
+		$log_table = $wpdb->prefix . 'aiwoo_chat_logs';
+
+		// ── Filters ───────────────────────────────────────────────────────────
+		// phpcs:disable WordPress.Security.NonceVerification.Recommended
+		$search      = isset( $_GET['search'] )      ? sanitize_text_field( wp_unslash( $_GET['search'] ) )      : '';
+		$filter_type = isset( $_GET['filter_type'] ) ? sanitize_key( $_GET['filter_type'] )                      : 'all';
+		$filter_date = isset( $_GET['filter_date'] ) ? sanitize_key( $_GET['filter_date'] )                      : 'all';
+		$current_page = max( 1, isset( $_GET['paged'] ) ? absint( $_GET['paged'] ) : 1 );
+		$export_csv  = isset( $_GET['export'] ) && 'csv' === $_GET['export'];
+		// phpcs:enable
+
+		$per_page = 20;
+
+		// ── CSV export — validate nonce then stream and exit ──────────────────
+		if ( $export_csv ) {
+			// phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized
+			check_admin_referer( 'aiwoo_export_top_requests' );
+			$this->export_top_requests_csv( $log_table, $search, $filter_date );
+			exit;
+		}
+
+		// ── Build WHERE (date filter) ─────────────────────────────────────────
+		$where = $this->build_top_requests_where( $filter_date );
+
+		// ── Build HAVING (search) ─────────────────────────────────────────────
+		$having = '';
+		if ( '' !== $search ) {
+			$having = $wpdb->prepare(
+				'HAVING LOWER(TRIM(user_message)) LIKE %s',
+				'%' . $wpdb->esc_like( strtolower( $search ) ) . '%'
+			);
+		}
+
+		// Fetch up to 500 aggregated rows (response-type filter applied in PHP).
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$all_rows = $wpdb->get_results(
+			"SELECT LOWER(TRIM(user_message)) AS query,
+			        COUNT(*) AS total,
+			        MAX(ai_response) AS last_response
+			 FROM `{$log_table}`
+			 {$where}
+			 GROUP BY LOWER(TRIM(user_message))
+			 {$having}
+			 ORDER BY total DESC
+			 LIMIT 500"
+		);
+
+		if ( ! is_array( $all_rows ) ) {
+			$all_rows = array();
+		}
+
+		// ── Response-type detection ───────────────────────────────────────────
+		$qr_response_set = $this->quick_reply_service->get_response_set();
+
+		if ( 'quick_reply' === $filter_type ) {
+			$all_rows = array_values( array_filter(
+				$all_rows,
+				static function ( $r ) use ( $qr_response_set ) {
+					return isset( $qr_response_set[ trim( $r->last_response ) ] );
+				}
+			) );
+		} elseif ( 'ai' === $filter_type ) {
+			$all_rows = array_values( array_filter(
+				$all_rows,
+				static function ( $r ) use ( $qr_response_set ) {
+					return ! isset( $qr_response_set[ trim( $r->last_response ) ] );
+				}
+			) );
+		}
+
+		$total_rows = count( $all_rows );
+		$offset     = ( $current_page - 1 ) * $per_page;
+		$rows       = array_slice( $all_rows, $offset, $per_page );
+
+		$quick_reply_service = $this->quick_reply_service;
+
+		require AI_WOO_ASSISTANT_PATH . 'admin/top-requests-page.php';
+	}
+
+	/** Build a WHERE clause string for the date filter. */
+	private function build_top_requests_where( $filter_date ) {
+		if ( '7' === $filter_date ) {
+			return "WHERE created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)";
+		}
+		if ( '30' === $filter_date ) {
+			return "WHERE created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)";
+		}
+		return '';
+	}
+
+	/** Stream a CSV of all (unfiltered) top-request rows and exit. */
+	private function export_top_requests_csv( $log_table, $search, $filter_date ) {
+		global $wpdb;
+
+		$where  = $this->build_top_requests_where( $filter_date );
+		$having = '';
+		if ( '' !== $search ) {
+			$having = $wpdb->prepare(
+				'HAVING LOWER(TRIM(user_message)) LIKE %s',
+				'%' . $wpdb->esc_like( strtolower( $search ) ) . '%'
+			);
+		}
+
+		// phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.DirectDatabaseQuery
+		$rows = $wpdb->get_results(
+			"SELECT LOWER(TRIM(user_message)) AS query,
+			        COUNT(*) AS total,
+			        MAX(ai_response) AS last_response
+			 FROM `{$log_table}`
+			 {$where}
+			 GROUP BY LOWER(TRIM(user_message))
+			 {$having}
+			 ORDER BY total DESC
+			 LIMIT 5000"
+		);
+
+		if ( ! is_array( $rows ) ) {
+			$rows = array();
+		}
+
+		$filename = 'sellora-top-requests-' . gmdate( 'Y-m-d' ) . '.csv';
+
+		header( 'Content-Type: text/csv; charset=utf-8' );
+		header( 'Content-Disposition: attachment; filename="' . $filename . '"' );
+		header( 'Pragma: no-cache' );
+		header( 'Expires: 0' );
+
+		$out = fopen( 'php://output', 'w' );
+		fputcsv( $out, array( 'Query', 'Count', 'Response Preview' ) );
+
+		foreach ( $rows as $row ) {
+			fputcsv( $out, array(
+				$row->query,
+				$row->total,
+				mb_substr( $row->last_response, 0, 200 ),
+			) );
+		}
+
+		fclose( $out );
+	}
+
+	public function render_quick_replies() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			wp_die( esc_html__( 'You do not have permission to view this page.', 'ai-woocommerce-assistant' ) );
+		}
+
+		$quick_reply_service = $this->quick_reply_service;
+		require AI_WOO_ASSISTANT_PATH . 'admin/quick-replies-page.php';
 	}
 
 	public function render_enquiries() {

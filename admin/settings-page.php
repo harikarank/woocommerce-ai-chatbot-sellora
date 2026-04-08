@@ -155,6 +155,14 @@ defined( 'ABSPATH' ) || exit;
 				</tr>
 			</table>
 
+			<h3><?php esc_html_e( 'Shape', 'ai-woocommerce-assistant' ); ?></h3>
+			<table class="form-table" role="presentation">
+				<tr>
+					<th scope="row"><label for="ai-woo-assistant-border_radius"><?php esc_html_e( 'Corner radius (px)', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'border_radius' ) ); ?></td>
+				</tr>
+			</table>
+
 			<h3><?php esc_html_e( 'Panel Borders', 'ai-woocommerce-assistant' ); ?></h3>
 			<table class="form-table" role="presentation">
 				<tr>
