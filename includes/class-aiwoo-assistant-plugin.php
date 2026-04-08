@@ -238,6 +238,7 @@ final class Plugin {
 			'color_counter_text'      => '--aiwoo-counter-text',
 			'color_panel_border'      => '--aiwoo-panel-border',
 			'color_header_border_bottom' => '--aiwoo-header-border-bottom',
+			'color_form_bg'           => '--aiwoo-form-bg',
 		);
 
 		foreach ( $map as $setting_key => $css_var ) {

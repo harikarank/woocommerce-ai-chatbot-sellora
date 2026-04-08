@@ -59,6 +59,7 @@ final class Settings {
 		'color_counter_text'      => '',
 		'color_panel_border'      => '',
 		'color_header_border_bottom' => '',
+		'color_form_bg'           => '',
 		// Enquiry form
 		'enquiry_title'           => '',
 		'enquiry_content'         => 'Please share a few more details and our team will follow up with the best option.',
@@ -199,6 +200,7 @@ final class Settings {
 			'color_loading_bg', 'color_loading_text',
 			'color_counter_bg', 'color_counter_text',
 			'color_panel_border', 'color_header_border_bottom',
+			'color_form_bg',
 		);
 
 		$settings['enquiry_title']   = isset( $input['enquiry_title'] ) ? sanitize_text_field( wp_unslash( $input['enquiry_title'] ) ) : '';
@@ -478,6 +480,7 @@ final class Settings {
 						'color_counter_text'      => __( '(same as soft text)', 'ai-woocommerce-assistant' ),
 						'color_panel_border'      => '#000000',
 						'color_header_border_bottom' => __( '(same as accent hover)', 'ai-woocommerce-assistant' ),
+						'color_form_bg'           => '#ffffff',
 					);
 
 					$default_hint = $placeholder_map[ $key ] ?? '';

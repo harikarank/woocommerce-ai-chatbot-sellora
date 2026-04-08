@@ -564,6 +564,11 @@ No live WordPress or WooCommerce runtime test is recorded in this repository con
 
 ## Change Log
 
+### 2026-04-08 (session 7)
+
+- **CSS tweaks** — Removed `border-right` from `.aiwoo-input` (and its focus rule). Added `margin-right: 10px` to `.aiwoo-send`. Removed box-shadow on `.aiwoo-widget.is-open .aiwoo-panel`. Set `.aiwoo-char-counter` padding to `5px 5px 5px`. Set `.aiwoo-panel__header p` `line-height: 20px`. Removed `text-decoration` from `.aiwoo-clear` button.
+- **Form background color setting** — new `color_form_bg` setting (default `#ffffff`) maps to `--aiwoo-form-bg` CSS variable used on `.aiwoo-form`. Exposed in Appearance tab under "Input & Send Button". Wired through settings defaults, sanitize, placeholder_map, `build_color_css`, and settings-page.php.
+
 ### 2026-04-08 (session 6)
 
 - **Clear chat button** — trash-icon button (`.aiwoo-clear`) added to widget header left of the close button (`chat-widget.php`). On click, clears `state.messages`, removes both `storageKey` and `sessionKey` from `sessionStorage`, and re-renders the welcome message. Next message creates a fresh session ID — no prior history sent to AI, saving tokens.

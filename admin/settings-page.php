@@ -202,6 +202,10 @@ defined( 'ABSPATH' ) || exit;
 			<h3><?php esc_html_e( 'Input &amp; Send Button', 'ai-woocommerce-assistant' ); ?></h3>
 			<table class="form-table" role="presentation">
 				<tr>
+					<th scope="row"><label for="ai-woo-assistant-color_form_bg"><?php esc_html_e( 'Form area background', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'color_form_bg' ) ); ?></td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="ai-woo-assistant-color_input_bg"><?php esc_html_e( 'Input background', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'color_input_bg' ) ); ?></td>
 				</tr>

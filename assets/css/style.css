@@ -42,6 +42,9 @@
 	--aiwoo-input-bg:           var(--aiwoo-surface);
 	--aiwoo-input-text:         var(--aiwoo-copy);
 
+	/* Input form */
+	--aiwoo-form-bg:            #ffffff;
+
 	/* Typing indicator */
 	--aiwoo-loading-bg:         var(--aiwoo-surface);
 	--aiwoo-loading-text:       var(--aiwoo-copy-soft);
@@ -137,6 +140,7 @@
 	opacity: 1;
 	transform: translateY(0);
 	pointer-events: auto;
+	box-shadow: none;
 }
 
 /* ── Panel header ───────────────────────────────────────────────────────── */
@@ -189,6 +193,7 @@
 	color: var(--aiwoo-header-text);
 	opacity: 0.72;
 	font-size: 11px;
+	line-height: 20px;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -423,7 +428,7 @@
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 3px 10px 3px;
+	padding: 5px 5px 5px;
 	font-size: 10.5px;
 	line-height: 1;
 	color: var(--aiwoo-counter-text);
@@ -447,8 +452,7 @@
 	opacity: 0.6;
 	transition: opacity 0.15s;
 	line-height: 1;
-	text-decoration: underline;
-	text-underline-offset: 2px;
+	text-decoration: none;
 }
 
 .aiwoo-clear:hover { opacity: 1; }
@@ -458,7 +462,7 @@
 	display: grid;
 	grid-template-columns: 1fr auto;
 	border-top: 2px solid #000;
-	background: var(--aiwoo-surface);
+	background: var(--aiwoo-form-bg);
 	flex-shrink: 0;
 	overflow: visible;
 }
@@ -467,7 +471,6 @@
 	min-height: 75px;
 	max-height: 130px;
 	border: none;
-	border-right: 1.5px solid var(--aiwoo-border);
 	padding: 14px 15px;
 	font: inherit;
 	font-size: 13.5px;
@@ -476,10 +479,6 @@
 	resize: none;
 	outline: none;
 	transition: border-right-color 0.15s;
-}
-
-.aiwoo-input:focus {
-	border-right-color: var(--aiwoo-primary);
 }
 
 .aiwoo-input::placeholder {
@@ -502,6 +501,7 @@
 	align-items: center;
 	justify-content: center;
 	transform: translate(5px, -5px);
+	margin-right: 10px;
 	box-shadow: 0 2px 8px rgba(0, 0, 0, 0.22);
 	transition: background 0.15s ease, box-shadow 0.15s ease;
 }
