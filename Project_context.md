@@ -564,6 +564,10 @@ No live WordPress or WooCommerce runtime test is recorded in this repository con
 
 ## Change Log
 
+### 2026-04-08 (session 8)
+
+- **CSS tweaks** — `.aiwoo-enquiry` added `margin: 20px 0px`. `.aiwoo-enquiry__title` added `line-height: 20px`. `.aiwoo-enquiry-form` added `margin-top: 15px`. `.aiwoo-enquiry-form textarea` added `resize: none`. `.aiwoo-panel__header h2` changed to `font-weight: 500; font-size: 16px`.
+
 ### 2026-04-08 (session 7)
 
 - **CSS tweaks** — Removed `border-right` from `.aiwoo-input` (and its focus rule). Added `margin-right: 10px` to `.aiwoo-send`. Removed box-shadow on `.aiwoo-widget.is-open .aiwoo-panel`. Set `.aiwoo-char-counter` padding to `5px 5px 5px`. Set `.aiwoo-panel__header p` `line-height: 20px`. Removed `text-decoration` from `.aiwoo-clear` button.
