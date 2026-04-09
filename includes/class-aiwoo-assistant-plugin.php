@@ -74,7 +74,7 @@ final class Plugin {
 
 		// Admin-only: menu, notices, assets. Saves service instantiation on the frontend.
 		if ( is_admin() ) {
-			add_action( 'admin_init', array( $this, 'init_admin_menu' ), 5 );
+			add_action( 'admin_init', array( $this, 'init_admin_menu' ), 1 );
 			add_action( 'admin_init', array( $this, 'maybe_warn_if_woocommerce_missing' ) );
 			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
 			add_action( 'admin_notices', array( $this, 'maybe_temperature_notice' ) );
