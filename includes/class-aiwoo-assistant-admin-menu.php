@@ -43,10 +43,9 @@ final class Admin_Menu {
 		$this->quick_reply_service = $quick_reply_service;
 		$this->ai_error_logger     = $ai_error_logger;
 
-		add_action( 'admin_menu',     array( $this, 'register_menus' ) );
-		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_node' ), 100 );
-		add_action( 'admin_head',     array( $this, 'admin_bar_styles' ) );
-		add_action( 'wp_head',        array( $this, 'admin_bar_styles' ) );
+		add_action( 'admin_menu', array( $this, 'register_menus' ) );
+		// Note: admin bar hooks moved to Plugin class so the admin bar works
+		// without forcing this (and its service dependencies) to instantiate.
 	}
 
 	// -------------------------------------------------------------------------
@@ -373,80 +372,6 @@ final class Admin_Menu {
 
 		$quick_reply_service = $this->quick_reply_service;
 		require AI_WOO_ASSISTANT_PATH . 'admin/quick-replies-page.php';
-	}
-
-	// -------------------------------------------------------------------------
-	// Admin bar
-	// -------------------------------------------------------------------------
-
-	public function add_admin_bar_node( \WP_Admin_Bar $wp_admin_bar ) {
-		if ( ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-
-		$icon_url = esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/favicon.svg' );
-		$title    = '<img src="' . $icon_url . '" class="aiwoo-ab-icon" alt="" />'
-			. '<span class="ab-label">' . esc_html__( 'Sellora AI', 'ai-woocommerce-assistant' ) . '</span>';
-
-		$wp_admin_bar->add_node(
-			array(
-				'id'     => 'sellora-ai-bar',
-				'title'  => $title,
-				'href'   => admin_url( 'admin.php?page=sellora-ai' ),
-				'meta'   => array(
-					'title' => esc_attr__( 'Sellora AI Dashboard', 'ai-woocommerce-assistant' ),
-				),
-			)
-		);
-
-		// Quick-access sub-items.
-		$subitems = array(
-			array(
-				'id'     => 'sellora-ai-bar-chat',
-				'title'  => esc_html__( 'Chat History', 'ai-woocommerce-assistant' ),
-				'href'   => admin_url( 'admin.php?page=sellora-ai' ),
-			),
-			array(
-				'id'     => 'sellora-ai-bar-errors',
-				'title'  => esc_html__( 'AI Error Log', 'ai-woocommerce-assistant' ),
-				'href'   => admin_url( 'admin.php?page=sellora-ai-errors' ),
-			),
-			array(
-				'id'     => 'sellora-ai-bar-settings',
-				'title'  => esc_html__( 'Settings', 'ai-woocommerce-assistant' ),
-				'href'   => admin_url( 'admin.php?page=ai-woo-assistant' ),
-			),
-		);
-
-		foreach ( $subitems as $item ) {
-			$wp_admin_bar->add_node(
-				array_merge( $item, array( 'parent' => 'sellora-ai-bar' ) )
-			);
-		}
-	}
-
-	/**
-	 * Tiny CSS for the admin bar icon — hooked on both admin_head and wp_head
-	 * so it shows on the frontend admin bar too.
-	 */
-	public function admin_bar_styles() {
-		if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) {
-			return;
-		}
-		?>
-		<style>
-			#wpadminbar #wp-admin-bar-sellora-ai-bar .aiwoo-ab-icon {
-				display: inline-block;
-				width: 18px;
-				height: 18px;
-				vertical-align: middle;
-				margin-right: 5px;
-				margin-top: -2px;
-				position: relative;
-				top: -1px;
-			}
-		</style>
-		<?php
 	}
 
 	public function render_info() {

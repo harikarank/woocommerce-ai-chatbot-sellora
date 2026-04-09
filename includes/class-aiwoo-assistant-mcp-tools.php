@@ -257,15 +257,19 @@ final class MCP_Tools {
 		);
 
 		// Return a slim subset so we don't bloat the AI context.
+		// Omit stock_status for in-stock items (default) to save tokens.
 		$products = array_map(
 			static function ( array $p ): array {
-				return array(
-					'id'           => (int) $p['id'],
-					'name'         => (string) $p['name'],
-					'price'        => (string) $p['price'],
-					'url'          => (string) $p['permalink'],
-					'stock_status' => (string) $p['stock_status'],
+				$slim = array(
+					'id'    => (int) $p['id'],
+					'name'  => (string) $p['name'],
+					'price' => (string) $p['price'],
+					'url'   => (string) $p['permalink'],
 				);
+				if ( ! empty( $p['stock_status'] ) && 'instock' !== $p['stock_status'] ) {
+					$slim['stock'] = (string) $p['stock_status'];
+				}
+				return $slim;
 			},
 			$raw_products
 		);
@@ -317,18 +321,25 @@ final class MCP_Tools {
 			$attributes[ $label ] = implode( ', ', array_map( 'sanitize_text_field', (array) $values ) );
 		}
 
+		$stock_status = $product->get_stock_status();
+		$sale_price   = $product->get_sale_price();
+
 		$result = array(
 			'id'                => $product_id,
 			'name'              => $product->get_name(),
 			'price'             => wp_strip_all_tags( wc_price( (float) $product->get_price() ) ),
-			'regular_price'     => $product->get_regular_price(),
-			'sale_price'        => $product->get_sale_price(),
-			'sku'               => $product->get_sku(),
-			'stock_status'      => $product->get_stock_status(),
 			'short_description' => wp_trim_words( wp_strip_all_tags( $product->get_short_description() ), 30 ),
 			'attributes'        => $attributes,
 			'url'               => $product->get_permalink(),
 		);
+
+		if ( 'instock' !== $stock_status ) {
+			$result['stock'] = $stock_status;
+		}
+		if ( '' !== (string) $sale_price ) {
+			$result['sale_price']    = $sale_price;
+			$result['regular_price'] = $product->get_regular_price();
+		}
 
 		set_transient( $cache_key, $result, self::CACHE_TTL );
 

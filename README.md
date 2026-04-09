@@ -1,6 +1,6 @@
 # Sellora AI — WooCommerce AI Chatbot & Shopping Assistant
 
-A production-grade WordPress plugin that adds an AI-powered chat widget to any WooCommerce store. Customers type naturally and receive instant, grounded product recommendations. Supports **OpenAI**, **Claude (Anthropic)**, and **Gemini (Google)** — switchable at any time from the admin settings.
+A production-grade WordPress plugin that adds an AI-powered chat widget to any WooCommerce store. Customers type naturally and receive instant, grounded product recommendations. Supports **OpenAI**, **Claude (Anthropic)**, and **Gemini (Google)** — switchable at any time from the admin settings. Includes a rule-based Quick Reply engine to bypass the AI for common queries, MCP tool-calling mode for on-demand product lookups, personalisation, upsell/cross-sell intelligence, and a full admin dashboard (chat history, enquiries, IP blocklist, quick replies, top requests analytics, AI error log, plugin guide).
 
 ---
 
@@ -14,6 +14,7 @@ A production-grade WordPress plugin that adds an AI-powered chat widget to any W
   - [Step 2 — Get your API key](#step-2--get-your-api-key)
   - [Step 3 — Configure the widget](#step-3--configure-the-widget)
   - [Step 4 — Customise colours](#step-4--customise-colours)
+  - [Step 5 — AI Intelligence (optional)](#step-5--ai-intelligence-optional)
 - [Admin Pages](#admin-pages)
 - [Security](#security)
 - [Project Structure](#project-structure)
@@ -32,33 +33,78 @@ A production-grade WordPress plugin that adds an AI-powered chat widget to any W
 | **Claude (Anthropic)** | claude-sonnet-4-6 *(default)*, claude-opus-4-6, claude-haiku-4-5-20251001 |
 | **Gemini (Google)** | gemini-2.5-flash *(default)*, gemini-2.5-pro, gemini-2.5-flash-lite, gemini-2.0-flash-lite, gemini-1.5-pro, gemini-1.5-flash |
 
-Switch providers from **Sellora AI → Settings → General**. Only the fields for the selected provider are shown — no clutter.
+Switch providers from **Sellora AI → Settings → General**. Only the fields for the selected provider are shown — no clutter. All three providers enforce a `max_tokens` cap of 1024 per request to prevent runaway cost.
+
+### Two Operating Modes
+
+| Mode | Behaviour |
+|---|---|
+| **Legacy (default)** | Plugin searches WooCommerce by keyword, injects matching products into the prompt, AI responds |
+| **MCP Tool Calling** | AI decides which products to fetch via `get_products`, `get_product_details`, `get_related_products`, and `get_user_context` tool calls on demand — no product data in the initial prompt |
+
+MCP mode reduces token usage and improves accuracy. Enable it under **Settings → AI Intelligence**. Works with all three providers (OpenAI function calling, Claude tool_use, Gemini functionCall).
 
 ### Chat Widget
 
 - Floating launcher button fixed to the bottom-right corner
 - Animated, responsive panel — full-screen on mobile, floating on desktop
-- Product recommendation cards shown inline with AI response
-- Enquiry form rendered inside the chat when no products match
+- Product recommendation cards shown inline with AI response (configurable: price, stock, image, description, view link)
+- Square product thumbnails (1:1 aspect ratio)
+- Enquiry form rendered inside the chat when no products match, with honeypot anti-spam
 - Live character counter with configurable message length limit (default: 200 chars)
 - Chat state and recent message history persisted across page loads (sessionStorage)
+- Clear chat button in the panel header
 - Configurable welcome message, panel title, subtitle, company logo, and assistant avatar
+- Configurable corner radius (0–24 px) applied to panel, message bubbles, and enquiry form
 
 ### WooCommerce Integration
 
 - Searches your real product catalog using keyword matching against WooCommerce products
-- Sends live product data (name, price, stock status, description, categories) to the AI — no hallucinated products
-- Detects the current product page and includes that product first in AI context
+- Sends live product data (name, price, stock, description, attributes) to the AI — no hallucinated products
+- Detects the current product page; includes that product in AI context only when the user message references it (keyword overlap check)
+- Falls back to product cards from catalog search when the AI provider is unavailable
 - Falls back to a contact form when no products match the query
+- HPOS (High-Performance Order Storage) compatible
+
+### Personalisation & Upsell (MCP mode)
+
+- **Personalisation:** Tracks viewed products and chat-derived search history in browser sessionStorage. The AI can query a `get_user_context` tool to tailor recommendations based on recent behaviour. No PII leaves the browser unless the AI explicitly calls the tool.
+- **Upsell / Cross-sell:** Exposes a `get_related_products` tool that returns WooCommerce-configured upsell and cross-sell IDs for a given product, letting the AI suggest "You may also like…" items.
+
+### Quick Replies (Rule-Based Bypass)
+
+- Define keyword rules that return instant responses without calling the AI at all — great for FAQs like store hours, return policy, or shipping info
+- 69 default rules seeded on activation (greetings, order tracking, returns, delivery, pricing, etc.) — all editable
+- Match types: `contains` (keyword anywhere) or `exact` (full-message match)
+- Priority-based ordering — highest priority wins when multiple rules match
+- One-hour transient cache, flushed automatically on any rule change
+- Admin page: **Sellora AI → Quick Replies**
+
+### Top Requests Analytics
+
+- Aggregates chat logs by normalised message to surface the most frequent customer queries
+- Type badges distinguish "Quick Reply" vs "AI Response" at a glance
+- Inline "Save as Quick Reply" button turns high-frequency AI responses into rule-based bypasses — directly reduces AI usage
+- Filters: search, type (all / quick reply / AI), date (7 / 30 days / all time)
+- CSV export
+- Admin page: **Sellora AI → Top Requests**
 
 ### Admin Settings (Tabbed)
 
 | Tab | Contents |
 |---|---|
-| **General** | Provider, API keys, model, temperature, catalog size, message length limit |
-| **Widget** | Panel title/subtitle, company logo, assistant avatar, launcher icon, welcome message |
-| **Appearance** | 17 colour pickers (accent, header, bubbles, input, send button, text) |
+| **General** | Provider, API keys (masked), model, temperature, catalog size, message length limit |
+| **Widget** | Panel title/subtitle, company logo, assistant avatar, launcher icon, welcome message, enquiry form intro, product card field toggles, no-match fallback text |
+| **Appearance** | 24 colour pickers, corner radius (panel/bubbles/form) |
 | **AI & Prompt** | Additional system prompt instructions appended to the built-in base prompt |
+| **AI Intelligence** | MCP tool calling, max products per tool call, personalisation, upsell/cross-sell |
+
+### API Key Security
+
+- API keys are never rendered as HTML values in the settings form. Instead, a masked placeholder (first 4 + last 4 characters) is shown
+- Saving with a blank API key field **preserves** the existing key — it is never accidentally wiped
+- Enter a new key to replace the current one
+- Keys are stored server-side only; the frontend never receives them
 
 ### Security
 
@@ -67,27 +113,31 @@ Switch providers from **Sellora AI → Settings → General**. Only the fields f
 | IP Blocklist | Exact IPv4/IPv6 and CIDR ranges — blocks widget render + all AJAX requests server-side |
 | Auto IP Block | Message exceeding the length limit → sender IP auto-added to blocklist |
 | Bot Detection | 17 User-Agent signatures checked before nonce verification |
-| Rate Limiting | 15 requests per sliding minute per IP |
+| Rate Limiting | 15 requests per fixed 60-second window per IP (chat and enquiry) |
 | Nonce | `check_ajax_referer` on every AJAX handler |
 | Sanitisation | All inputs sanitised; API keys never output to the frontend |
+| Honeypot | Hidden field on enquiry form silently rejects bot submissions |
+| Token Cap | Every AI provider call capped at `max_tokens = 1024` to cap cost |
+| Error Masking | Provider exceptions never forwarded to the browser — logged server-side only |
 
-### Chat Logging & Enquiries
+### Chat Logging, Enquiries & Error Log
 
 - Custom DB table `{prefix}aiwoo_chat_logs` — session grouping, IP, customer name, timestamps
 - Customer name backfilled in chat logs when they submit an enquiry
 - Enquiries saved as private WordPress posts (`aiwoo_enquiry`) and emailed to the site admin
-- Both are viewable and filterable in the WordPress admin
+- Custom DB table `{prefix}aiwoo_ai_error_logs` — records AI provider failures (context: `ajax` hard failure, `mcp` fallback, `legacy` fallback). Admin-only; users never see these details.
+- All are viewable and filterable in the WordPress admin
 
 ---
 
 ## Requirements
 
-| Requirement | Minimum |
-|---|---|
-| WordPress | 6.4 |
-| WooCommerce | 7.8 |
-| PHP | 8.0 |
-| AI Provider | API key for OpenAI, Anthropic, or Google |
+| Requirement | Minimum | Tested up to |
+|---|---|---|
+| WordPress | 6.4 | current |
+| WooCommerce | 7.8 | 9.0 |
+| PHP | 8.0 | 8.4 |
+| AI Provider | API key for OpenAI, Anthropic, or Google | — |
 
 > **WooCommerce is required** for product-aware responses. The widget loads without it but will not surface product recommendations.
 
@@ -179,23 +229,35 @@ Enable the widget with the **Enable widget** checkbox, then click **Save Changes
 
 ### Step 4 — Customise colours
 
-On the **Appearance** tab, 17 colour pickers let you match the widget to your brand:
+On the **Appearance** tab, 24 colour pickers let you match the widget to your brand:
 
 | Section | Fields |
 |---|---|
 | Accent | Accent colour, Accent hover colour |
 | Panel & Layout | Widget background, Messages area background, Border colour, Body text, Secondary text |
+| Shape | Corner radius (0–24 px) applied to panel, bubbles, and enquiry form |
+| Panel Borders | Panel border colour, Header bottom border colour |
 | Header | Header background, Header text & icons |
 | Messages | User bubble background/text, Agent bubble background/text |
-| Input & Send | Input background/text, Send button background/text/hover |
+| Input & Send | Form background, Form border, Input background/text, Send button background/text/hover |
+| Typing & Counter | Typing indicator background/text, Character counter background/text |
 
 **Leave any field blank** to use the built-in default. You only need to set the fields you want to override.
+
+### Step 5 — AI Intelligence (optional)
+
+On the **AI Intelligence** tab:
+
+- **Enable MCP tool calling** — let the AI fetch products via tool calls instead of receiving all catalog data upfront. Reduces token cost and improves accuracy.
+- **Max products per tool call** — 1–10 (default 5). Limits what a single `get_products` call returns.
+- **Enable personalisation** — expose `get_user_context` tool (viewed products, chat-derived searches, cart). Requires MCP mode.
+- **Enable upsell / cross-sell** — expose `get_related_products` tool returning WooCommerce-configured upsells and cross-sells. Requires MCP mode.
 
 ---
 
 ## Admin Pages
 
-The plugin adds a top-level **Sellora AI** menu to the WordPress admin with four sub-pages:
+The plugin adds a top-level **Sellora AI** menu to the WordPress admin with eight sub-pages:
 
 ### Chat History (`Sellora AI → Chat History`)
 
@@ -226,9 +288,41 @@ Manage the list of blocked IP addresses and ranges.
 
 > The blocklist is enforced entirely server-side. Blocked visitors receive no widget HTML, no JavaScript, and no API responses. There is nothing to bypass from the browser.
 
+### Quick Replies (`Sellora AI → Quick Replies`)
+
+Manage rule-based keyword matches that bypass the AI entirely.
+
+- **List view:** all rules sorted by priority, with title, keywords, match type, response preview, status
+- **Add / Edit form:** title, comma-separated keywords, match type (contains/exact), response text, priority, active toggle
+- **Delete** with confirmation
+- Rule changes invalidate the cache instantly
+
+### Top Requests (`Sellora AI → Top Requests`)
+
+Aggregated analytics view of the most frequent customer queries.
+
+- **Filters:** search, type (all / quick reply / AI response), date range (7 / 30 days / all time)
+- **Inline action:** turn any AI-answered query into a Quick Reply rule with one click
+- **CSV export** of the filtered result set
+- Popular queries (>= 100 hits) are flagged with a 🔥 badge
+
+### AI Error Log (`Sellora AI → AI Error Log`)
+
+Admin-only view of AI provider failures. Three error contexts:
+
+- **No Response** (red) — hard failure; user saw a generic error
+- **MCP Fallback** (amber) — MCP path failed; user saw fallback product cards
+- **Legacy Fallback** (amber) — legacy path failed; user saw fallback product cards
+
+Shows timestamp, context, IP, user message, and truncated error detail. Customer-facing users never see any of this.
+
+### Plugin Guide (`Sellora AI → Plugin Guide`)
+
+In-dashboard documentation covering every feature: providers, widget settings, product cards, MCP mode, quick replies, IP blocklist, chat history, enquiries, and the system prompt.
+
 ### Settings (`Sellora AI → Settings`)
 
-Four-tab settings panel — see [Configuration](#configuration) above.
+Five-tab settings panel — see [Configuration](#configuration) above.
 
 ---
 
@@ -243,11 +337,12 @@ Every incoming chat request passes through the following checks in order. A requ
 2. IP on blocklist?         → 403 if blocked (exact or CIDR match)
 3. Bot User-Agent?          → 403 if matched (17 known signatures + empty UA)
 4. Valid nonce?             → 403 if invalid (check_ajax_referer)
-5. Rate limit OK?           → 429 if > 15 requests/min for this IP
-6. Payload size OK?         → 413 if history > 8 000 chars or context > 4 000 chars
+5. Rate limit OK?           → 429 if > 15 requests in the current 60-second window
+6. Payload size OK?         → 413 if history > 8 000 chars or context > 6 000 chars
 7. Message length OK?       → 413 + auto IP block if message > max_message_length
 8. Sanitise all inputs
-9. Call AI provider
+9. Quick Reply check (bypass AI if matched)
+10. Call AI provider (with max_tokens = 1024 cap)
 ```
 
 ### IP blocklist details
@@ -268,41 +363,51 @@ Every incoming chat request passes through the following checks in order. A requ
 woocommerce-ai-chatbot-sellora/
 │
 ├── woocommerce-ai-chatbot-sellora.php   # Plugin entry — headers, constants, requires, activation hook
-├── uninstall.php                        # Cleanup on plugin deletion
+├── uninstall.php                        # Cleanup on plugin deletion (options + 3 custom tables + enquiry CPT)
 ├── index.php                            # Directory index guard
 │
 ├── includes/
-│   ├── class-aiwoo-assistant-plugin.php           # Singleton bootstrap — wires all services
-│   ├── class-aiwoo-assistant-settings.php         # Settings API — option: ai_woo_assistant_settings
-│   ├── class-aiwoo-assistant-ajax-controller.php  # AJAX handlers for chat + enquiry
-│   ├── class-aiwoo-assistant-chat-service.php     # Chat orchestration — prompt building, product lookup
-│   ├── class-aiwoo-assistant-catalog-service.php  # WooCommerce product search
-│   ├── class-aiwoo-assistant-chat-logger.php      # DB table: {prefix}aiwoo_chat_logs
-│   ├── class-aiwoo-assistant-admin-menu.php       # Admin menu + page renderers
-│   ├── class-aiwoo-assistant-ip-blocker.php       # IP blocklist — exact + CIDR (IPv4/IPv6)
-│   ├── class-aiwoo-assistant-provider-interface.php  # Provider contract
-│   ├── class-aiwoo-assistant-openai-provider.php     # OpenAI — /v1/responses
-│   ├── class-aiwoo-assistant-claude-provider.php     # Claude — /v1/messages
+│   ├── class-aiwoo-assistant-plugin.php              # Singleton bootstrap — lazy service getters
+│   ├── class-aiwoo-assistant-settings.php            # Settings API — option: ai_woo_assistant_settings
+│   ├── class-aiwoo-assistant-ajax-controller.php     # AJAX handlers for chat + enquiry
+│   ├── class-aiwoo-assistant-chat-service.php        # Chat orchestration — legacy + MCP paths
+│   ├── class-aiwoo-assistant-catalog-service.php     # WooCommerce product search + formatting
+│   ├── class-aiwoo-assistant-mcp-tools.php           # MCP tool registry + executor (4 tools)
+│   ├── class-aiwoo-assistant-chat-logger.php         # DB table: {prefix}aiwoo_chat_logs
+│   ├── class-aiwoo-assistant-ai-error-logger.php     # DB table: {prefix}aiwoo_ai_error_logs
+│   ├── class-aiwoo-assistant-quick-reply-service.php # DB table: {prefix}aiwoo_quick_replies + 69 seeds
+│   ├── class-aiwoo-assistant-admin-menu.php          # Admin menu + page renderers
+│   ├── class-aiwoo-assistant-ip-blocker.php          # IP blocklist — exact + CIDR (IPv4/IPv6)
+│   ├── class-aiwoo-assistant-provider-interface.php  # Provider contract (generate_response + generate_with_tools)
+│   ├── class-aiwoo-assistant-openai-provider.php     # OpenAI — /v1/responses + /v1/chat/completions
+│   ├── class-aiwoo-assistant-claude-provider.php     # Claude — /v1/messages (Messages API)
 │   ├── class-aiwoo-assistant-gemini-provider.php     # Gemini — /v1beta/models/{model}:generateContent
-│   ├── api-handler.php                            # make_ai_provider() + call_ai_model() factory
-│   └── woocommerce-handler.php                    # WooCommerce compatibility helpers
+│   ├── api-handler.php                               # make_ai_provider() + call_ai_model() factory
+│   └── woocommerce-handler.php                       # WooCommerce compatibility helpers
 │
 ├── admin/
-│   ├── settings-page.php           # Tabbed settings UI (General / Widget / Appearance / AI & Prompt)
-│   ├── chat-history-page.php       # Session list with filters
-│   ├── chat-session-detail-page.php  # Single session conversation thread
-│   ├── enquiries-page.php          # Enquiry list with filters
-│   └── ip-blocklist-page.php       # IP blocklist add/delete UI
+│   ├── settings-page.php              # Tabbed settings UI (5 tabs)
+│   ├── chat-history-page.php          # Session list with filters
+│   ├── chat-session-detail-page.php   # Single session conversation thread
+│   ├── enquiries-page.php             # Enquiry list with filters
+│   ├── ip-blocklist-page.php          # IP blocklist add/delete UI
+│   ├── quick-replies-page.php         # Quick reply rule list + add/edit/delete
+│   ├── top-requests-page.php          # Top queries analytics + CSV export + inline save-as-QR
+│   ├── ai-errors-page.php             # AI provider failure log
+│   └── info-page.php                  # Plugin Guide / in-dashboard documentation
 │
 ├── templates/
-│   └── chat-widget.php             # Frontend widget HTML (launcher + chat panel)
+│   └── chat-widget.php                # Frontend widget HTML (launcher + chat panel)
 │
 └── assets/
     ├── css/
-    │   └── style.css               # Widget styles — all colours driven by CSS custom properties
-    └── js/
-        ├── chat.js                 # Frontend widget logic — AJAX, character counter, state
-        └── admin.js                # Admin — colour pickers, media uploader, tab switching, provider rows
+    │   └── style.css                  # Widget styles — all colours driven by CSS custom properties
+    ├── js/
+    │   ├── chat.js                    # Frontend widget — AJAX, counter, state, personalisation tracking
+    │   └── admin.js                   # Admin — colour pickers, media uploader, tab switching, provider rows
+    └── img/
+        ├── favicon.svg                # Default launcher icon
+        └── logo.svg                   # Default panel header logo
 ```
 
 ---
@@ -365,11 +470,30 @@ No JavaScript is involved in colour application.
 
 The following measures reduce AI API cost per request:
 
+- **Trimmed system prompts** — anti-hallucination rules merged into a single line; store metadata compressed
+- **Slim product context** — `format_product()` drops `sku`, `tags`, `categories`; `sale_price`/`regular_price` only included when on sale; whitespace collapsed; HTML entities decoded
 - Product `short_description` trimmed to 30 words; `description` to 50 words before being included in context
+- Products fed to prompt in slim JSON: `{name, price, url, desc?, stock?}`
+- **Smart history** — capped at 6 entries stored, 4 sent to AI; each entry truncated to 500 chars; assistant replies reduced to the first sentence only (strips product card text)
+- **Context pruning** — `pageUrl` dropped from AI context entirely; current product context sent only when the user message contains a keyword from the product name
 - Conversation history HTML-stripped before sending (prevents previous product card HTML from counting against the token budget)
-- History capped at 8 entries stored, 6 entries sent to AI; each entry truncated to 1 000 characters
+- **MCP mode** — AI fetches product data via tool calls on demand instead of receiving all product data upfront; transient cache 120s; per-tool call cap 3/request; max 5 API rounds
+- **MCP tool results** — omit `stock_status` when "instock" (assumed default); drop `sku`
+- **Provider-level caps** — every API call enforces `max_tokens` / `max_output_tokens = 1024`
+- **Quick Reply bypass** — keyword-matched queries skip the AI entirely (1 hour cache)
 - WooCommerce product query uses `fields => ids`, `no_found_rows => true`, and disabled cache updates
 - Message length hard-capped at a configurable limit (default 200 chars); overages auto-block the IP
+
+### Runtime efficiency (lazy loading)
+
+`Plugin::__construct()` no longer instantiates the full service graph on every request. Only `Settings` and `IP_Blocker` are eager. All other services are built lazily via private getters the first time they are needed:
+
+- **Frontend page load (widget enabled):** 3 objects (Settings, IP_Blocker, Catalog_Service for product context)
+- **Frontend page load (widget disabled / blocked IP):** 2 objects (Settings, IP_Blocker)
+- **AJAX chat request:** full service chain instantiated lazily inside the handler
+- **Admin page load:** Settings + IP_Blocker + Admin_Menu and its dependencies
+
+Admin bar rendering lives directly on the `Plugin` class so logged-in users see the frontend admin bar without forcing `Admin_Menu` and its dependencies to instantiate.
 
 ### Coding conventions
 
@@ -386,13 +510,48 @@ The following measures reduce AI API cost per request:
 
 ### 1.0.0
 
+**AI providers & modes**
 - OpenAI, Claude (Anthropic), and Gemini (Google) provider integrations
+- Two modes: legacy prompt-based path and MCP tool-calling path
+- Tool calls supported across all three providers (OpenAI function calling, Claude tool_use, Gemini functionCall)
+- `max_tokens = 1024` cap on every provider call
+- API keys masked in the settings form; blank save preserves existing key
+
+**Chat widget**
 - Floating chat widget with product recommendation cards and enquiry form fallback
-- Tabbed admin settings (General, Widget, Appearance, AI & Prompt)
-- 17-field colour customisation system driven by CSS custom properties
-- Configurable message length limit with live character counter and auto IP block
-- IP blocklist admin page — exact IPs and CIDR ranges (IPv4 + IPv6)
-- Chat history admin page — session list, filters, detail view
+- Product card field toggles (price, stock, image, description, view link)
+- Square (1:1) product thumbnails
+- Configurable corner radius (0–24 px)
+- Live character counter with configurable message length limit + auto IP block
+- Persistent chat state (sessionStorage), clear chat button
+- Honeypot anti-spam on enquiry form
+- AI failure fallback — user sees product cards from catalog search instead of a dead-end error
+
+**Admin features**
+- Tabbed settings (General, Widget, Appearance, AI & Prompt, AI Intelligence) — 24 colour pickers
+- Chat history admin page — session list, filters (IP / name / date), detail view
 - Enquiries admin page — filterable list with email notification
-- Custom DB table for chat logs with session grouping
-- Bot detection, nonce verification, rate limiting, input sanitisation
+- IP blocklist admin page — exact IPs and CIDR ranges (IPv4 + IPv6)
+- Quick Replies admin page — rule-based keyword matches that bypass the AI (69 default rules seeded)
+- Top Requests analytics page — most frequent queries with type badges, inline save-as-Quick-Reply, CSV export
+- AI Error Log admin page — server-side logs of provider failures (never exposed to users)
+- Plugin Guide in-dashboard documentation
+- Admin bar shortcut with Chat History, AI Error Log, and Settings sub-items
+
+**Personalisation & upsell (MCP mode)**
+- Viewed products and search history tracked in sessionStorage; exposed to the AI via `get_user_context` tool
+- Upsell and cross-sell products exposed via `get_related_products` tool
+
+**Security & reliability**
+- Fixed-window rate limiting (15 req / 60 s per IP) on chat and enquiry
+- Bot detection (17 User-Agent signatures), nonce verification on every AJAX handler
+- Input sanitisation throughout; provider exceptions never forwarded to the browser
+- Custom DB tables: `{prefix}aiwoo_chat_logs`, `{prefix}aiwoo_quick_replies`, `{prefix}aiwoo_ai_error_logs`
+- HPOS (WooCommerce High-Performance Order Storage) compatible
+- Full cleanup in `uninstall.php` (options, 3 tables, enquiry CPT)
+
+**Performance**
+- Lazy service loading — frontend page loads instantiate only 2–3 objects instead of 10
+- Quick Reply transient cache (1 hour)
+- MCP tool result transient cache (120 s)
+- Trimmed prompts, slim product data, first-sentence history reduction — ~35–50% token savings on typical multi-turn chats

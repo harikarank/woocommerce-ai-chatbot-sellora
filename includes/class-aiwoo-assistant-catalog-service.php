@@ -125,23 +125,36 @@ final class Catalog_Service {
 	private function format_product( $product ) {
 		$image_id  = $product->get_image_id();
 		$image_url = $image_id ? (string) wp_get_attachment_image_url( $image_id, 'thumbnail' ) : '';
+		$sale_price = $product->get_sale_price();
 
-		return array(
+		$data = array(
 			'id'                => $product->get_id(),
 			'name'              => $product->get_name(),
 			'image_url'         => $image_url,
 			'price'             => wp_strip_all_tags( wp_kses_post( wc_price( (float) $product->get_price() ) ) ),
-			'regular_price'     => $product->get_regular_price(),
-			'sale_price'        => $product->get_sale_price(),
-			'sku'               => $product->get_sku(),
 			'permalink'         => $product->get_permalink(),
 			'stock_status'      => $product->get_stock_status(),
-			'short_description' => wp_trim_words( wp_strip_all_tags( $product->get_short_description() ), 30 ),
-			'description'       => wp_trim_words( wp_strip_all_tags( $product->get_description() ), 50 ),
-			'categories'        => wp_get_post_terms( $product->get_id(), 'product_cat', array( 'fields' => 'names' ) ),
-			'tags'              => wp_get_post_terms( $product->get_id(), 'product_tag', array( 'fields' => 'names' ) ),
+			'short_description' => $this->clean_text( wp_trim_words( wp_strip_all_tags( $product->get_short_description() ), 30 ) ),
+			'description'       => $this->clean_text( wp_trim_words( wp_strip_all_tags( $product->get_description() ), 50 ) ),
 			'attributes'        => $this->format_attributes( $product ),
 		);
+
+		// Only include sale/regular when the product is actually on sale.
+		if ( '' !== (string) $sale_price ) {
+			$data['sale_price']    = $sale_price;
+			$data['regular_price'] = $product->get_regular_price();
+		}
+
+		return $data;
+	}
+
+	/**
+	 * Collapse consecutive whitespace and decode HTML entities.
+	 * Saves tokens when JSON-encoded into the AI prompt.
+	 */
+	private function clean_text( $text ) {
+		$text = html_entity_decode( (string) $text, ENT_QUOTES | ENT_HTML5, 'UTF-8' );
+		return trim( (string) preg_replace( '/\s+/', ' ', $text ) );
 	}
 
 	private function format_attributes( $product ) {

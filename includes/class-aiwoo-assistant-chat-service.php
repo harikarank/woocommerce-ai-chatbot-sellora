@@ -162,11 +162,8 @@ final class Chat_Service {
 			$parts[] = $base_prompt;
 		}
 
-		$parts[] = 'You are a helpful shopping assistant for ' . get_bloginfo( 'name' ) . '.';
-		$parts[] = 'Store currency: ' . $currency . '. Store description: ' . get_bloginfo( 'description' ) . '.';
-		$parts[] = 'Always use the available tools to fetch product data before recommending items.';
-		$parts[] = 'Never invent or guess product details — rely only on tool results.';
-		$parts[] = 'When recommending products, include the name, price, availability, and a product link.';
+		$parts[] = sprintf( 'Shopping assistant for %s. Currency: %s.', get_bloginfo( 'name' ), $currency );
+		$parts[] = 'Use tools for product data; never invent details. In recommendations include name, price, stock, link.';
 
 		return implode( "\n", $parts );
 	}
@@ -183,25 +180,22 @@ final class Chat_Service {
 	private function build_messages_mcp( string $message, array $history, array $page_context ): array {
 		$messages = array();
 
-		// Include up to the last 6 history entries.
-		foreach ( array_slice( $history, -6 ) as $entry ) {
+		// Include up to the last 4 history entries, each capped at 500 chars.
+		foreach ( array_slice( $history, -4 ) as $entry ) {
 			if ( empty( $entry['role'] ) || empty( $entry['content'] ) ) {
 				continue;
 			}
 			$messages[] = array(
 				'role'    => $entry['role'],
-				'content' => mb_substr( (string) $entry['content'], 0, 1000 ),
+				'content' => mb_substr( (string) $entry['content'], 0, 500 ),
 			);
 		}
 
-		// Prepend lightweight page context to the user message (no product data).
+		// Only prepend current product context when the user message references it.
 		$context_prefix = '';
-		if ( ! empty( $page_context['pageUrl'] ) ) {
-			$context_prefix .= 'Current page: ' . esc_url_raw( $page_context['pageUrl'] ) . "\n";
-		}
-		if ( ! empty( $page_context['product']['id'] ) && ! empty( $page_context['product']['name'] ) ) {
-			$context_prefix .= 'Viewing product #' . absint( $page_context['product']['id'] )
-				. ' — ' . sanitize_text_field( $page_context['product']['name'] ) . "\n";
+		if ( ! empty( $page_context['product']['name'] )
+			&& $this->is_product_referenced( $message, (string) $page_context['product']['name'] ) ) {
+			$context_prefix = 'Viewing: ' . sanitize_text_field( (string) $page_context['product']['name'] ) . "\n";
 		}
 
 		$messages[] = array(
@@ -282,19 +276,15 @@ final class Chat_Service {
 			$prompt_parts[] = $base_prompt;
 		}
 
-		$prompt_parts[] = 'Use only the supplied store and product context for factual product claims.';
-		$prompt_parts[] = 'If information is missing, say so plainly instead of inventing details.';
-		$prompt_parts[] = 'Never claim live shipping, fulfillment, or policy details unless they appear in the provided context.';
-		$prompt_parts[] = 'Store name: ' . get_bloginfo( 'name' ) . '.';
-		$prompt_parts[] = 'Store description: ' . get_bloginfo( 'description' ) . '.';
-		$prompt_parts[] = 'Store currency: ' . $currency . '.';
+		$prompt_parts[] = 'Only use provided context for facts. Never invent products, shipping, or policies.';
+		$prompt_parts[] = sprintf( 'Store: %s. Currency: %s.', get_bloginfo( 'name' ), $currency );
 
 		return implode( "\n", $prompt_parts );
 	}
 
 	private function build_input( $message, array $history, array $page_context, array $products ) {
 		$history_lines = array();
-		foreach ( array_slice( $history, -6 ) as $entry ) {
+		foreach ( array_slice( $history, -4 ) as $entry ) {
 			if ( empty( $entry['role'] ) || empty( $entry['content'] ) ) {
 				continue;
 			}
@@ -302,27 +292,73 @@ final class Chat_Service {
 			$history_lines[] = $role . ': ' . sanitize_text_field( (string) $entry['content'] );
 		}
 
-		$page_lines = array(
-			'Current page URL: ' . ( ! empty( $page_context['pageUrl'] ) ? esc_url_raw( $page_context['pageUrl'] ) : home_url( '/' ) ),
-		);
-
-		if ( ! empty( $page_context['product'] ) && is_array( $page_context['product'] ) ) {
-			$page_lines[] = 'Current product context: ' . wp_json_encode( $page_context['product'] );
+		// Only include current product context when the user's message references it.
+		$current_product_line = '';
+		if ( ! empty( $page_context['product']['name'] )
+			&& $this->is_product_referenced( $message, (string) $page_context['product']['name'] ) ) {
+			$current_product_line = 'Current product: ' . sanitize_text_field( (string) $page_context['product']['name'] );
+			if ( ! empty( $page_context['product']['price'] ) ) {
+				$current_product_line .= ' (' . sanitize_text_field( (string) $page_context['product']['price'] ) . ')';
+			}
 		}
 
-		$product_lines = array_map( static fn( $p ) => wp_json_encode( $p ), $products );
+		// Build a slim JSON representation of each relevant product.
+		$product_lines = array_map(
+			static function ( $p ) {
+				$slim = array(
+					'name'  => $p['name'] ?? '',
+					'price' => $p['price'] ?? '',
+					'url'   => $p['permalink'] ?? '',
+				);
+				if ( ! empty( $p['short_description'] ) ) {
+					$slim['desc'] = $p['short_description'];
+				}
+				if ( ! empty( $p['stock_status'] ) && 'instock' !== $p['stock_status'] ) {
+					$slim['stock'] = $p['stock_status'];
+				}
+				return wp_json_encode( $slim );
+			},
+			$products
+		);
 
 		return implode(
 			"\n\n",
 			array_filter(
 				array(
 					'Recent conversation:' . ( $history_lines ? "\n" . implode( "\n", $history_lines ) : "\nNo prior messages." ),
-					'Page context:' . "\n" . implode( "\n", $page_lines ),
+					$current_product_line,
 					'Relevant products:' . ( $product_lines ? "\n" . implode( "\n", $product_lines ) : "\nNo products found." ),
 					'Latest customer message: ' . sanitize_text_field( $message ),
 				)
 			)
 		);
+	}
+
+	/**
+	 * True if the user message contains any keyword (>=3 chars) from the
+	 * product name — used to decide whether to include current product context.
+	 */
+	private function is_product_referenced( $message, $product_name ) {
+		$product_name = trim( (string) $product_name );
+		if ( '' === $product_name ) {
+			return false;
+		}
+
+		$msg_lower = strtolower( (string) $message );
+		$tokens    = preg_split( '/\s+/', strtolower( $product_name ) );
+
+		if ( ! is_array( $tokens ) ) {
+			return false;
+		}
+
+		foreach ( $tokens as $word ) {
+			$word = preg_replace( '/[^\p{L}\p{N}]/u', '', (string) $word );
+			if ( mb_strlen( (string) $word ) >= 3 && str_contains( $msg_lower, (string) $word ) ) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 
 	// -------------------------------------------------------------------------
@@ -332,14 +368,23 @@ final class Chat_Service {
 	private function sanitize_history( array $history ) {
 		$sanitized = array();
 
-		foreach ( array_slice( $history, -8 ) as $entry ) {
+		foreach ( array_slice( $history, -6 ) as $entry ) {
 			if ( ! is_array( $entry ) ) {
 				continue;
 			}
 
 			$role    = ! empty( $entry['role'] ) && 'assistant' === $entry['role'] ? 'assistant' : 'user';
 			$content = ! empty( $entry['content'] ) ? sanitize_textarea_field( wp_strip_all_tags( (string) $entry['content'] ) ) : '';
-			$content = mb_substr( $content, 0, 1000 );
+
+			// For assistant replies, keep only the first sentence — drops
+			// product card text / long explanations that waste tokens.
+			if ( 'assistant' === $role && '' !== $content ) {
+				if ( preg_match( '/^(.+?[.!?])(?:\s|$)/u', $content, $m ) ) {
+					$content = $m[1];
+				}
+			}
+
+			$content = mb_substr( $content, 0, 500 );
 
 			if ( '' === trim( $content ) ) {
 				continue;

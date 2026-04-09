@@ -15,7 +15,7 @@ final class Quick_Reply_Service {
 	const DB_OPTION_KEY = 'aiwoo_qr_db_version';
 	const SEED_OPTION   = 'aiwoo_qr_seeded';
 	const CACHE_KEY     = 'aiwoo_quick_replies_cache';
-	const CACHE_TTL     = 300;
+	const CACHE_TTL     = 3600;
 
 	/** @var string */
 	private $table;

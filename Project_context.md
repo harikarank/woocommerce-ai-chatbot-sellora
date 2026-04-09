@@ -799,6 +799,94 @@ No live WordPress or WooCommerce runtime test is recorded in this repository con
 
 ---
 
+### 2026-04-09 (session 20) — README.md overhaul
+
+Full rewrite of `README.md` to match current state of the plugin. The previous README described only the initial 4-tab settings UI and 4 admin pages, missing every feature added in sessions 5–19.
+
+**Sections updated:**
+- **Intro** — added MCP mode, Quick Replies, personalisation, upsell, 8-page admin dashboard mention
+- **Features** — added Two Operating Modes (legacy vs MCP), Personalisation & Upsell, Quick Replies, Top Requests Analytics, API Key Security, AI Error Log, honeypot, HPOS compatibility, square thumbnails, corner radius, configurable product card fields, AI failure fallback, token caps
+- **Admin Settings** — tab count corrected 4 -> 5 (added AI Intelligence); colour picker count 17 -> 24
+- **Requirements** — added "Tested up to" column (WP current, WC 9.0, PHP 8.4)
+- **Admin Pages** — corrected from 4 sub-pages to 8 (Chat History, Enquiries, IP Blocklist, Quick Replies, Top Requests, AI Error Log, Plugin Guide, Settings)
+- **Configuration** — added Step 5 "AI Intelligence"; colour customisation expanded (shape, panel borders, form borders, typing indicator, counter)
+- **Security** — pipeline corrected: 10 steps with Quick Reply check before AI call; fixed-window rate limit (not sliding); pageContext limit 6000 (was 4000); added `max_tokens = 1024` note
+- **Project Structure** — added 5 new classes, 4 new admin pages, `assets/img/` directory
+- **Token efficiency** — rewritten: slim format, smarter history (6 stored, 4 used, 500 chars, first-sentence for assistant), pageUrl dropped, keyword-overlap product context, MCP mode, all provider caps, Quick Reply bypass
+- **Runtime efficiency** — new subsection documenting lazy loading (3 objects on frontend vs 10 before)
+- **Changelog 1.0.0** — rewritten as full feature list grouped by theme
+
+**Memory updates:**
+- `project_overview.md` — corrected stale `readme.txt` reference (file doesn't exist; only `README.md`). Added note that `readme.txt` needs to be created before WordPress.org submission.
+
+**Files changed:** `README.md`
+
+---
+
+### 2026-04-09 (session 19) — Token reduction & lazy loading
+
+Applied all fixes from `prompt_file.md` (Parts 1A–1E, 2A–2B). Parts 2C, 2D, 2E, 2F verified as already correct.
+
+**1A — System prompt trimmed (~50% shorter)**
+- `build_instructions()`: 6 lines -> 2 (merged 3 anti-hallucination rules, dropped store description).
+- `build_instructions_mcp()`: 5 lines -> 2 (merged tool-use + recommendation rules).
+
+**1B — Product context shrunk**
+- `Catalog_Service::format_product()`: dropped `sku`, `tags`, `categories`. `sale_price` + `regular_price` now included only when actually on sale. New `clean_text()` helper collapses whitespace and decodes HTML entities in `short_description` / `description`.
+- `MCP_Tools::tool_get_products()`: omits `stock_status` when "instock" (assumed default). Key renamed `stock_status` -> `stock` when present.
+- `MCP_Tools::tool_get_product_details()`: dropped `sku`. `stock` and `sale_price`/`regular_price` conditionally included.
+
+**1C — Smarter history**
+- `sanitize_history()`: cap reduced from -8 to -6 entries, each 1000 -> 500 chars. New first-sentence extraction for `assistant` role (regex strips product card text and long explanations).
+- `build_input()` / `build_messages_mcp()`: history slice reduced from -6 to -4 entries. MCP truncation cap also 1000 -> 500.
+
+**1D — Page context**
+- `pageUrl` dropped from both `build_input()` and `build_messages_mcp()` (zero AI value).
+- Current product context only included when the user message contains a keyword from the product name (>=3 chars).
+- New `is_product_referenced()` helper performs the keyword-overlap check.
+- In legacy path, product context is sent as slim `{name, price}` only (not full product JSON).
+- In MCP path, product context is a single-line `Viewing: {name}` prefix.
+
+**1E — Temperature admin notice**
+- New `Plugin::maybe_temperature_notice()` — dismissible info notice shown only on Sellora AI admin pages when `temperature > 0.5`, suggesting 0.3 for tighter responses.
+- Hooked on `admin_notices` inside the `is_admin()` block.
+
+**2A — Lazy loading refactor**
+- `Plugin::__construct()` no longer instantiates the full service graph. Only `Settings` and `IP_Blocker` are eager (needed on every request for widget render + block checks).
+- New private getters `get_catalog_service()`, `get_ai_error_logger()`, `get_quick_reply_service()`, `get_chat_logger()`, `get_mcp_tools()`, `get_chat_service()`, `get_ajax_controller()` — each null-check lazy-init.
+- AJAX hooks registered directly on `Plugin` (`handle_ajax_chat`, `handle_ajax_enquiry`) which lazy-init `Ajax_Controller` on first call.
+- `Ajax_Controller::__construct()` no longer calls `add_action()` for AJAX hooks (now done by Plugin).
+- `Admin_Menu` instantiated lazily on `admin_init` (priority 5) via `Plugin::init_admin_menu()`, only when `is_admin()`.
+- Admin bar methods (`add_admin_bar_node`, `render_admin_bar_styles`) moved from `Admin_Menu` to `Plugin` so they work on the frontend without forcing `Admin_Menu` and its service dependencies to instantiate.
+- `enqueue_assets()`: `$this->catalog_service->get_current_product_context()` changed to `$this->get_catalog_service()->get_current_product_context()`.
+- `enqueue_admin_assets()`: null guard added for `$this->admin_menu`.
+- **Frontend page load with widget:** 10 objects instantiated before -> 3 now (Settings, IP_Blocker, Catalog_Service).
+- **Frontend page load, widget disabled/blocked:** 10 -> 2 objects.
+- **AJAX chat request:** same chain as before, just built lazily.
+- **Admin page:** Settings + IP_Blocker + Admin_Menu + its deps (Chat_Logger, Quick_Reply_Service, AI_Error_Logger).
+
+**2B — Quick Reply cache TTL**
+- `Quick_Reply_Service::CACHE_TTL` raised from 300s to 3600s. Rules rarely change and invalidation on insert/update/delete is already in place (confirmed in `insert()`, `update()`, `delete()`).
+
+**Already correct (verified, no changes):**
+- 2C: `WP_Query` in `find_relevant_products()` already has `fields=>ids`, `no_found_rows=>true`, `update_post_meta_cache=>false`, `update_post_term_cache=>false`, `posts_per_page=>$limit`.
+- 2D: All four MCP tools verified — `get_products` (md5 key), `get_product_details` and `get_related_products` (per-ID keys), `get_user_context` (correctly not cached since it reads per-request state).
+- 2E: `Chat_Logger::log()` uses `$wpdb->insert()`. Schema check is in `Plugin::__construct()` via `maybe_create_table()`, not per log call.
+- 2F: `enqueue_admin_assets()` already early-returns unless `$hook === get_settings_hook()`.
+
+**Estimated token savings (rough):**
+- System prompt trim: ~50% fewer prompt tokens per request (-150 tokens avg)
+- Product context shrink (slim format + whitespace collapse): ~30% fewer product-data tokens
+- History trim (6->4 entries, 1000->500 chars, first-sentence for assistant): ~60% fewer history tokens
+- Page context drop: ~20–30 tokens saved per request
+- Combined: ~35–50% token reduction on a typical multi-turn chat
+
+**Files changed:** `includes/class-aiwoo-assistant-chat-service.php`, `class-aiwoo-assistant-catalog-service.php`, `class-aiwoo-assistant-mcp-tools.php`, `class-aiwoo-assistant-plugin.php`, `class-aiwoo-assistant-ajax-controller.php`, `class-aiwoo-assistant-admin-menu.php`, `class-aiwoo-assistant-quick-reply-service.php`
+
+**Syntax verification:** All PHP files pass `php -l`.
+
+---
+
 ### 2026-04-09 (session 18) — Security audit fixes: token caps & API key masking
 
 Full three-pillar audit (Security, Performance, WordPress Standards) performed. Five priority fixes applied:

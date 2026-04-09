@@ -27,10 +27,8 @@ final class Ajax_Controller {
 		$this->ip_blocker       = $ip_blocker;
 		$this->ai_error_logger  = $ai_error_logger;
 
-		add_action( 'wp_ajax_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
-		add_action( 'wp_ajax_nopriv_ai_woo_assistant_chat', array( $this, 'handle_chat' ) );
-		add_action( 'wp_ajax_ai_woo_assistant_enquiry', array( $this, 'handle_enquiry' ) );
-		add_action( 'wp_ajax_nopriv_ai_woo_assistant_enquiry', array( $this, 'handle_enquiry' ) );
+		// AJAX hooks are registered by Plugin so this controller can be
+		// instantiated lazily (only on the first AJAX call).
 	}
 
 	public function handle_chat() {

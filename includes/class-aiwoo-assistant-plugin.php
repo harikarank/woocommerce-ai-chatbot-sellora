@@ -41,29 +41,235 @@ final class Plugin {
 	}
 
 	private function __construct() {
+		// Cheap schema checks (autoloaded option guards).
 		Chat_Logger::maybe_create_table();
 		Quick_Reply_Service::maybe_create_table();
 		Quick_Reply_Service::maybe_seed_defaults();
 		AI_Error_Logger::maybe_create_table();
 
-		$this->settings            = new Settings();
-		$this->catalog_service     = new Catalog_Service( $this->settings );
-		$this->quick_reply_service = new Quick_Reply_Service();
-		$this->mcp_tools           = new MCP_Tools( $this->settings, $this->catalog_service );
-		$this->ai_error_logger     = new AI_Error_Logger();
-		$this->chat_service        = new Chat_Service( $this->settings, $this->catalog_service, $this->quick_reply_service, $this->mcp_tools, $this->ai_error_logger );
-		$this->chat_logger         = new Chat_Logger();
-		$this->ip_blocker          = new IP_Blocker();
-		$this->ajax_controller     = new Ajax_Controller( $this->settings, $this->chat_service, $this->chat_logger, $this->ip_blocker, $this->ai_error_logger );
-		$this->admin_menu          = new Admin_Menu( $this->settings, $this->chat_logger, $this->ip_blocker, $this->quick_reply_service, $this->ai_error_logger );
+		// Eager: Settings and IP_Blocker are needed on every request
+		// (widget render checks, enqueue gating, AJAX gating).
+		$this->settings   = new Settings();
+		$this->ip_blocker = new IP_Blocker();
 
+		// Common hooks (run on every request).
 		add_action( 'plugins_loaded', array( $this, 'load_textdomain' ) );
 		add_action( 'before_woocommerce_init', array( $this, 'declare_wc_compatibility' ) );
 		add_action( 'init', array( $this, 'register_enquiry_post_type' ) );
-		add_action( 'admin_init', array( $this, 'maybe_warn_if_woocommerce_missing' ) );
-		add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+
+		// Frontend widget rendering.
 		add_action( 'wp_enqueue_scripts', array( $this, 'enqueue_assets' ) );
 		add_action( 'wp_footer', array( $this, 'render_widget_template' ) );
+
+		// Admin bar (frontend + backend) — self-contained, does not need full Admin_Menu.
+		add_action( 'admin_bar_menu', array( $this, 'add_admin_bar_node' ), 100 );
+		add_action( 'admin_head', array( $this, 'render_admin_bar_styles' ) );
+		add_action( 'wp_head', array( $this, 'render_admin_bar_styles' ) );
+
+		// AJAX — hooks registered eagerly; Ajax_Controller built lazily inside handler.
+		add_action( 'wp_ajax_ai_woo_assistant_chat',        array( $this, 'handle_ajax_chat' ) );
+		add_action( 'wp_ajax_nopriv_ai_woo_assistant_chat', array( $this, 'handle_ajax_chat' ) );
+		add_action( 'wp_ajax_ai_woo_assistant_enquiry',        array( $this, 'handle_ajax_enquiry' ) );
+		add_action( 'wp_ajax_nopriv_ai_woo_assistant_enquiry', array( $this, 'handle_ajax_enquiry' ) );
+
+		// Admin-only: menu, notices, assets. Saves service instantiation on the frontend.
+		if ( is_admin() ) {
+			add_action( 'admin_init', array( $this, 'init_admin_menu' ), 5 );
+			add_action( 'admin_init', array( $this, 'maybe_warn_if_woocommerce_missing' ) );
+			add_action( 'admin_enqueue_scripts', array( $this, 'enqueue_admin_assets' ) );
+			add_action( 'admin_notices', array( $this, 'maybe_temperature_notice' ) );
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Lazy service getters — only instantiated when actually needed.
+	// -------------------------------------------------------------------------
+
+	private function get_catalog_service(): Catalog_Service {
+		if ( null === $this->catalog_service ) {
+			$this->catalog_service = new Catalog_Service( $this->settings );
+		}
+		return $this->catalog_service;
+	}
+
+	private function get_ai_error_logger(): AI_Error_Logger {
+		if ( null === $this->ai_error_logger ) {
+			$this->ai_error_logger = new AI_Error_Logger();
+		}
+		return $this->ai_error_logger;
+	}
+
+	private function get_quick_reply_service(): Quick_Reply_Service {
+		if ( null === $this->quick_reply_service ) {
+			$this->quick_reply_service = new Quick_Reply_Service();
+		}
+		return $this->quick_reply_service;
+	}
+
+	private function get_chat_logger(): Chat_Logger {
+		if ( null === $this->chat_logger ) {
+			$this->chat_logger = new Chat_Logger();
+		}
+		return $this->chat_logger;
+	}
+
+	private function get_mcp_tools(): MCP_Tools {
+		if ( null === $this->mcp_tools ) {
+			$this->mcp_tools = new MCP_Tools( $this->settings, $this->get_catalog_service() );
+		}
+		return $this->mcp_tools;
+	}
+
+	private function get_chat_service(): Chat_Service {
+		if ( null === $this->chat_service ) {
+			$this->chat_service = new Chat_Service(
+				$this->settings,
+				$this->get_catalog_service(),
+				$this->get_quick_reply_service(),
+				$this->get_mcp_tools(),
+				$this->get_ai_error_logger()
+			);
+		}
+		return $this->chat_service;
+	}
+
+	private function get_ajax_controller(): Ajax_Controller {
+		if ( null === $this->ajax_controller ) {
+			$this->ajax_controller = new Ajax_Controller(
+				$this->settings,
+				$this->get_chat_service(),
+				$this->get_chat_logger(),
+				$this->ip_blocker,
+				$this->get_ai_error_logger()
+			);
+		}
+		return $this->ajax_controller;
+	}
+
+	// -------------------------------------------------------------------------
+	// AJAX handler shims — WordPress calls these; they lazy-init the controller.
+	// -------------------------------------------------------------------------
+
+	public function handle_ajax_chat() {
+		$this->get_ajax_controller()->handle_chat();
+	}
+
+	public function handle_ajax_enquiry() {
+		$this->get_ajax_controller()->handle_enquiry();
+	}
+
+	// -------------------------------------------------------------------------
+	// Admin menu initialisation (admin context only).
+	// -------------------------------------------------------------------------
+
+	public function init_admin_menu() {
+		if ( null !== $this->admin_menu ) {
+			return;
+		}
+		$this->admin_menu = new Admin_Menu(
+			$this->settings,
+			$this->get_chat_logger(),
+			$this->ip_blocker,
+			$this->get_quick_reply_service(),
+			$this->get_ai_error_logger()
+		);
+	}
+
+	// -------------------------------------------------------------------------
+	// Admin bar node — self-contained, works on frontend + backend.
+	// (Moved from Admin_Menu so it no longer forces service instantiation.)
+	// -------------------------------------------------------------------------
+
+	public function add_admin_bar_node( \WP_Admin_Bar $wp_admin_bar ) {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+
+		$icon_url = esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/favicon.svg' );
+		$title    = '<img src="' . $icon_url . '" class="aiwoo-ab-icon" alt="" />'
+			. '<span class="ab-label">' . esc_html__( 'Sellora AI', 'ai-woocommerce-assistant' ) . '</span>';
+
+		$wp_admin_bar->add_node(
+			array(
+				'id'    => 'sellora-ai-bar',
+				'title' => $title,
+				'href'  => admin_url( 'admin.php?page=sellora-ai' ),
+				'meta'  => array(
+					'title' => esc_attr__( 'Sellora AI Dashboard', 'ai-woocommerce-assistant' ),
+				),
+			)
+		);
+
+		$subitems = array(
+			array(
+				'id'    => 'sellora-ai-bar-chat',
+				'title' => esc_html__( 'Chat History', 'ai-woocommerce-assistant' ),
+				'href'  => admin_url( 'admin.php?page=sellora-ai' ),
+			),
+			array(
+				'id'    => 'sellora-ai-bar-errors',
+				'title' => esc_html__( 'AI Error Log', 'ai-woocommerce-assistant' ),
+				'href'  => admin_url( 'admin.php?page=sellora-ai-errors' ),
+			),
+			array(
+				'id'    => 'sellora-ai-bar-settings',
+				'title' => esc_html__( 'Settings', 'ai-woocommerce-assistant' ),
+				'href'  => admin_url( 'admin.php?page=ai-woo-assistant' ),
+			),
+		);
+
+		foreach ( $subitems as $item ) {
+			$wp_admin_bar->add_node( array_merge( $item, array( 'parent' => 'sellora-ai-bar' ) ) );
+		}
+	}
+
+	public function render_admin_bar_styles() {
+		if ( ! is_admin_bar_showing() || ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		?>
+		<style>
+			#wpadminbar #wp-admin-bar-sellora-ai-bar .aiwoo-ab-icon {
+				display: inline-block;
+				width: 18px;
+				height: 18px;
+				vertical-align: middle;
+				margin-right: 5px;
+				margin-top: -2px;
+				position: relative;
+				top: -1px;
+			}
+		</style>
+		<?php
+	}
+
+	// -------------------------------------------------------------------------
+	// Temperature admin notice.
+	// -------------------------------------------------------------------------
+
+	public function maybe_temperature_notice() {
+		if ( ! current_user_can( 'manage_options' ) ) {
+			return;
+		}
+		if ( ! function_exists( 'get_current_screen' ) ) {
+			return;
+		}
+		$screen = get_current_screen();
+		if ( ! $screen ) {
+			return;
+		}
+		// Only show on Sellora AI pages.
+		if ( false === strpos( (string) $screen->id, 'sellora-ai' )
+			&& false === strpos( (string) $screen->id, 'ai-woo-assistant' ) ) {
+			return;
+		}
+		$temp = (float) $this->settings->get( 'temperature' );
+		if ( $temp <= 0.5 ) {
+			return;
+		}
+		echo '<div class="notice notice-info is-dismissible"><p>';
+		echo esc_html__( 'Sellora AI tip: Temperature is above 0.5. Lowering it to 0.3 produces tighter, more token-efficient responses.', 'ai-woocommerce-assistant' );
+		echo '</p></div>';
 	}
 
 	public function load_textdomain() {
@@ -185,7 +391,7 @@ final class Plugin {
 				'storeContext'   => array(
 					'currencySymbol' => function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : get_option( 'woocommerce_currency', 'USD' ),
 					'pageUrl'        => esc_url_raw( home_url( add_query_arg( array(), $GLOBALS['wp']->request ?? '' ) ) ),
-					'product'        => $this->catalog_service->get_current_product_context(),
+					'product'        => $this->get_catalog_service()->get_current_product_context(),
 				),
 				'featureFlags'   => array(
 					'hasWooCommerce' => class_exists( 'WooCommerce' ),
@@ -199,6 +405,9 @@ final class Plugin {
 	}
 
 	public function enqueue_admin_assets( $hook ) {
+		if ( null === $this->admin_menu ) {
+			return;
+		}
 		if ( $hook !== $this->admin_menu->get_settings_hook() ) {
 			return;
 		}
