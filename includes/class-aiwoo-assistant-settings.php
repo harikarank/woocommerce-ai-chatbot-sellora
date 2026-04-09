@@ -181,17 +181,26 @@ final class Settings {
 			? $input['provider']
 			: 'openai';
 
-		// OpenAI
-		$settings['openai_api_key']       = isset( $input['openai_api_key'] ) ? sanitize_text_field( wp_unslash( $input['openai_api_key'] ) ) : '';
-		$settings['openai_model']         = isset( $input['openai_model'] ) ? $this->normalize_openai_model( wp_unslash( $input['openai_model'] ) ) : $this->defaults['openai_model'];
+		// OpenAI — blank input preserves existing key.
+		$openai_key_input = isset( $input['openai_api_key'] ) ? sanitize_text_field( wp_unslash( $input['openai_api_key'] ) ) : '';
+		if ( '' !== $openai_key_input ) {
+			$settings['openai_api_key'] = $openai_key_input;
+		}
+		$settings['openai_model'] = isset( $input['openai_model'] ) ? $this->normalize_openai_model( wp_unslash( $input['openai_model'] ) ) : $this->defaults['openai_model'];
 
-		// Claude
-		$settings['claude_api_key'] = isset( $input['claude_api_key'] ) ? sanitize_text_field( wp_unslash( $input['claude_api_key'] ) ) : '';
-		$settings['claude_model']   = isset( $input['claude_model'] ) ? $this->normalize_claude_model( wp_unslash( $input['claude_model'] ) ) : $this->defaults['claude_model'];
+		// Claude — blank input preserves existing key.
+		$claude_key_input = isset( $input['claude_api_key'] ) ? sanitize_text_field( wp_unslash( $input['claude_api_key'] ) ) : '';
+		if ( '' !== $claude_key_input ) {
+			$settings['claude_api_key'] = $claude_key_input;
+		}
+		$settings['claude_model'] = isset( $input['claude_model'] ) ? $this->normalize_claude_model( wp_unslash( $input['claude_model'] ) ) : $this->defaults['claude_model'];
 
-		// Gemini
-		$settings['gemini_api_key'] = isset( $input['gemini_api_key'] ) ? sanitize_text_field( wp_unslash( $input['gemini_api_key'] ) ) : '';
-		$settings['gemini_model']   = isset( $input['gemini_model'] ) ? $this->normalize_gemini_model( wp_unslash( $input['gemini_model'] ) ) : $this->defaults['gemini_model'];
+		// Gemini — blank input preserves existing key.
+		$gemini_key_input = isset( $input['gemini_api_key'] ) ? sanitize_text_field( wp_unslash( $input['gemini_api_key'] ) ) : '';
+		if ( '' !== $gemini_key_input ) {
+			$settings['gemini_api_key'] = $gemini_key_input;
+		}
+		$settings['gemini_model'] = isset( $input['gemini_model'] ) ? $this->normalize_gemini_model( wp_unslash( $input['gemini_model'] ) ) : $this->defaults['gemini_model'];
 		$settings['system_prompt']        = isset( $input['system_prompt'] ) ? sanitize_textarea_field( wp_unslash( $input['system_prompt'] ) ) : '';
 		$settings['welcome_message']      = isset( $input['welcome_message'] ) ? sanitize_textarea_field( wp_unslash( $input['welcome_message'] ) ) : $this->defaults['welcome_message'];
 		$settings['panel_title']          = isset( $input['panel_title'] ) ? sanitize_text_field( wp_unslash( $input['panel_title'] ) ) : '';
@@ -298,12 +307,16 @@ final class Settings {
 				break;
 
 			case 'claude_api_key':
+				$masked = $this->mask_api_key( (string) $value );
 				printf(
-					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="%3$s" autocomplete="off" />',
+					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="" autocomplete="off" placeholder="%3$s" />',
 					esc_attr( $field_id ),
 					esc_attr( $name ),
-					esc_attr( (string) $value )
+					esc_attr( $masked )
 				);
+				if ( '' !== (string) $value ) {
+					echo '<p class="description">' . esc_html__( 'Key is saved. Leave blank to keep the current key, or enter a new one to replace it.', 'ai-woocommerce-assistant' ) . '</p>';
+				}
 				echo '<p class="description"><a href="https://console.anthropic.com/account/keys" target="_blank" rel="noopener">'
 					. esc_html__( 'Get your Anthropic API key →', 'ai-woocommerce-assistant' )
 					. '</a></p>';
@@ -320,12 +333,16 @@ final class Settings {
 				break;
 
 			case 'gemini_api_key':
+				$masked = $this->mask_api_key( (string) $value );
 				printf(
-					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="%3$s" autocomplete="off" />',
+					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="" autocomplete="off" placeholder="%3$s" />',
 					esc_attr( $field_id ),
 					esc_attr( $name ),
-					esc_attr( (string) $value )
+					esc_attr( $masked )
 				);
+				if ( '' !== (string) $value ) {
+					echo '<p class="description">' . esc_html__( 'Key is saved. Leave blank to keep the current key, or enter a new one to replace it.', 'ai-woocommerce-assistant' ) . '</p>';
+				}
 				echo '<p class="description"><a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener">'
 					. esc_html__( 'Get your Google AI Studio API key →', 'ai-woocommerce-assistant' )
 					. '</a></p>';
@@ -345,12 +362,16 @@ final class Settings {
 				break;
 
 			case 'openai_api_key':
+				$masked = $this->mask_api_key( (string) $value );
 				printf(
-					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="%3$s" autocomplete="off" />',
+					'<input type="password" class="regular-text" id="%1$s" name="%2$s" value="" autocomplete="off" placeholder="%3$s" />',
 					esc_attr( $field_id ),
 					esc_attr( $name ),
-					esc_attr( (string) $value )
+					esc_attr( $masked )
 				);
+				if ( '' !== (string) $value ) {
+					echo '<p class="description">' . esc_html__( 'Key is saved. Leave blank to keep the current key, or enter a new one to replace it.', 'ai-woocommerce-assistant' ) . '</p>';
+				}
 				break;
 
 			case 'openai_model':
@@ -590,6 +611,21 @@ final class Settings {
 			'gpt-5.4',
 			'gpt-4.1-mini',
 		);
+	}
+
+	/**
+	 * Mask an API key for display — shows first 4 and last 4 characters.
+	 * Returns empty string for empty/short keys.
+	 */
+	private function mask_api_key( $key ) {
+		$key = (string) $key;
+		$len = strlen( $key );
+
+		if ( $len < 8 ) {
+			return '' !== $key ? str_repeat( '*', $len ) : '';
+		}
+
+		return substr( $key, 0, 4 ) . str_repeat( '*', $len - 8 ) . substr( $key, -4 );
 	}
 
 	private function normalize_claude_model( $model ) {

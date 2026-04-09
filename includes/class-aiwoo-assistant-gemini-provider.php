@@ -51,7 +51,8 @@ final class Gemini_Provider implements Provider_Interface {
 				),
 			),
 			'generationConfig'   => array(
-				'temperature' => $temperature,
+				'temperature'     => $temperature,
+				'maxOutputTokens' => 1024,
 			),
 		);
 
@@ -162,7 +163,10 @@ final class Gemini_Provider implements Provider_Interface {
 			$request_body = array(
 				'contents'         => $contents,
 				'tools'            => $gemini_tools,
-				'generationConfig' => array( 'temperature' => $temperature ),
+				'generationConfig' => array(
+					'temperature'     => $temperature,
+					'maxOutputTokens' => 1024,
+				),
 			);
 			if ( '' !== $instructions ) {
 				$request_body['system_instruction'] = array(

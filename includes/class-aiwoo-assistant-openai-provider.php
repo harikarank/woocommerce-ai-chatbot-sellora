@@ -26,10 +26,11 @@ final class OpenAI_Provider implements Provider_Interface {
 		}
 
 		$request_body = array(
-			'model'        => (string) $this->settings->get( 'openai_model' ),
-			'temperature'  => (float) $this->settings->get( 'temperature' ),
-			'instructions' => (string) $payload['instructions'],
-			'input'        => (string) $payload['input'],
+			'model'            => (string) $this->settings->get( 'openai_model' ),
+			'temperature'      => (float) $this->settings->get( 'temperature' ),
+			'max_output_tokens' => 1024,
+			'instructions'     => (string) $payload['instructions'],
+			'input'            => (string) $payload['input'],
 		);
 
 		$response = wp_remote_post(
@@ -140,6 +141,7 @@ final class OpenAI_Provider implements Provider_Interface {
 			$request_body = array(
 				'model'       => $model,
 				'temperature' => $temperature,
+				'max_tokens'  => 1024,
 				'messages'    => $messages,
 				'tools'       => $oa_tools,
 				'tool_choice' => 'auto',

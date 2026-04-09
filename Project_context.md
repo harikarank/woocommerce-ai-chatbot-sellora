@@ -799,6 +799,33 @@ No live WordPress or WooCommerce runtime test is recorded in this repository con
 
 ---
 
+### 2026-04-09 (session 18) — Security audit fixes: token caps & API key masking
+
+Full three-pillar audit (Security, Performance, WordPress Standards) performed. Five priority fixes applied:
+
+**Fix 1 — OpenAI `max_output_tokens` cap (Responses API)**
+- `class-aiwoo-assistant-openai-provider.php` `generate_response()`: added `'max_output_tokens' => 1024` to request body. Prevents unbounded token spend from long AI responses.
+
+**Fix 2 — OpenAI `max_tokens` cap (Chat Completions API / MCP mode)**
+- `class-aiwoo-assistant-openai-provider.php` `generate_with_tools()`: added `'max_tokens' => 1024` to request body.
+
+**Fix 3 — Gemini `maxOutputTokens` cap (both paths)**
+- `class-aiwoo-assistant-gemini-provider.php` `generate_response()`: added `'maxOutputTokens' => 1024` to `generationConfig`.
+- `class-aiwoo-assistant-gemini-provider.php` `generate_with_tools()`: added `'maxOutputTokens' => 1024` to `generationConfig`.
+
+**Fix 4 — API key masking in settings form**
+- All three API key fields (OpenAI, Claude, Gemini) no longer render the raw key value in the HTML. Instead: `value=""` with a `placeholder` showing masked key (e.g. `sk-p****...xY4z`).
+- New helper `Settings::mask_api_key()` — shows first 4 + last 4 characters, middle replaced with asterisks.
+- `sanitize_settings()` updated: blank API key input preserves the existing saved key (no longer overwrites with empty string on save).
+- Hint text "Key is saved. Leave blank to keep the current key" shown when a key exists.
+
+**Fix 5 — POT file generation** (documented, not code change)
+- Noted for build process: `wp i18n make-pot . languages/ai-woocommerce-assistant.pot`.
+
+**Files changed:** `includes/class-aiwoo-assistant-openai-provider.php`, `includes/class-aiwoo-assistant-gemini-provider.php`, `includes/class-aiwoo-assistant-settings.php`
+
+---
+
 ### 2026-04-08 (session 16) — AI failure fallback + chat_placeholder setting
 
 **AI failure graceful fallback:**
