@@ -56,6 +56,7 @@
 
 	/* Panel borders */
 	--aiwoo-panel-border:           #e5e5e5;
+	--aiwoo-panel-bg:               #e5e5e5;
 	--aiwoo-header-border-bottom:   var(--aiwoo-primary-dark);
 
 	/* Radius / sharpness */
@@ -130,7 +131,7 @@
 	height: min(580px, calc(100vh - 110px));
 	border: 2px solid var(--aiwoo-panel-border);
 	border-radius: var(--aiwoo-radius);
-	background: var(--aiwoo-panel-border);
+	background: var(--aiwoo-panel-bg);
 	box-shadow: var(--aiwoo-shadow-panel);
 	display: flex;
 	flex-direction: column;

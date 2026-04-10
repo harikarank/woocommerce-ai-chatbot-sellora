@@ -476,6 +476,12 @@ final class Plugin {
 			}
 		}
 
+		// Panel background — driven by the same color_panel_border setting.
+		$panel_border = sanitize_hex_color( (string) $this->settings->get( 'color_panel_border' ) );
+		if ( ! empty( $panel_border ) ) {
+			$vars[] = '--aiwoo-panel-bg:' . $panel_border;
+		}
+
 		// Form border color.
 		$form_border = sanitize_hex_color( (string) $this->settings->get( 'color_form_border' ) );
 		if ( ! empty( $form_border ) ) {
