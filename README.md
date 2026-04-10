@@ -94,7 +94,7 @@ MCP mode reduces token usage and improves accuracy. Enable it under **Settings �
 | Tab | Contents |
 |---|---|
 | **General** | Provider, API keys (masked), model, temperature, catalog size, message length limit |
-| **Widget** | Panel title/subtitle, company logo, assistant avatar, launcher icon, welcome message, enquiry form intro, product card field toggles, no-match fallback text |
+| **Widget** | Panel title/subtitle, company logo, assistant avatar, launcher icon, welcome message, auto-open delay, enquiry form intro, product card field toggles, no-match fallback text |
 | **Appearance** | 24 colour pickers, corner radius (panel/bubbles/form) |
 | **AI & Prompt** | Additional system prompt instructions appended to the built-in base prompt |
 | **AI Intelligence** | MCP tool calling, max products per tool call, personalisation, upsell/cross-sell |
@@ -222,6 +222,7 @@ On the **Widget** tab:
 - **Assistant avatar photo** — round photo shown next to each AI reply
 - **Chat launcher icon** — replaces the default chat icon on the floating button
 - **Welcome message** — the first message shown when the chat opens
+- **Auto-open delay** — number of seconds after page load before the chat panel opens automatically (e.g. `3`). Leave blank to disable auto-open. Only triggers if the widget is not already open from the visitor's session.
 
 Enable the widget with the **Enable widget** checkbox, then click **Save Changes**.
 
@@ -507,6 +508,10 @@ Admin bar rendering lives directly on the `Plugin` class so logged-in users see 
 ---
 
 ## Changelog
+
+### 1.0.1
+
+- **Auto-open delay** — new `auto_open_delay` setting (Widget tab). Enter a number of seconds (1–300); the chat panel opens automatically after that delay on page load. Leave blank to disable. The timer is skipped if the visitor already has the widget open from their session.
 
 ### 1.0.0
 

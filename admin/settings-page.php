@@ -112,6 +112,10 @@ defined( 'ABSPATH' ) || exit;
 					<td><?php $settings->render_field( array( 'key' => 'welcome_message' ) ); ?></td>
 				</tr>
 				<tr>
+					<th scope="row"><label for="ai-woo-assistant-auto_open_delay"><?php esc_html_e( 'Auto-open delay', 'ai-woocommerce-assistant' ); ?></label></th>
+					<td><?php $settings->render_field( array( 'key' => 'auto_open_delay' ) ); ?></td>
+				</tr>
+				<tr>
 					<th scope="row"><label for="ai-woo-assistant-enquiry_title"><?php esc_html_e( 'Enquiry form title', 'ai-woocommerce-assistant' ); ?></label></th>
 					<td><?php $settings->render_field( array( 'key' => 'enquiry_title' ) ); ?></td>
 				</tr>

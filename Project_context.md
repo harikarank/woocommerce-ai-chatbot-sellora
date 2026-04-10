@@ -1064,6 +1064,16 @@ Full security audit performed. Six issues resolved:
   - `woocommerce-ai-chatbot-sellora.php` — require new class, activation hook creates both tables.
   - `uninstall.php` — drops `aiwoo_quick_replies` table, deletes `aiwoo_qr_db_version` option and transient.
 
+### 2026-04-10 (session 22)
+
+- **Auto-open delay** — new `auto_open_delay` setting (string, default `''` = disabled). Integer 1–300 stored as a string; empty string = feature off.
+  - `Settings::$defaults` — added `'auto_open_delay' => ''`.
+  - `Settings::sanitize_settings()` — if input is blank, stores `''`; otherwise `absint()` clamped 1–300 stored as string.
+  - `Settings::render_field()` — new `case 'auto_open_delay'`: number input (`min=1 max=300 style="width:80px"`), labeled in seconds with description.
+  - `admin/settings-page.php` — new row added to Widget tab after "Welcome message".
+  - `includes/class-aiwoo-assistant-plugin.php` — `wp_localize_script` `settings` array now includes `'autoOpenDelay'` (integer, `0` when disabled).
+  - `assets/js/chat.js` — after `setOpen(state.isOpen)`, reads `config.settings.autoOpenDelay`. If truthy and the widget is not already open, schedules `setTimeout(() => { if (!state.isOpen) setOpen(true); }, delay * 1000)`. The inner guard prevents re-opening if the user manually closes before the timer fires.
+
 ### 2026-04-10 (session 21)
 
 - **Admin menu bug fix** — `Plugin::init_admin_menu()` was hooked to `admin_init` (priority 5). `admin_menu` fires before `admin_init` in WordPress, so `Admin_Menu::register_menus()` was never called — all menu pages were missing. Fixed by hooking `init_admin_menu` to `admin_menu` at priority 1 instead. The constructor's `add_action('admin_menu', ...)` at default priority 10 now fires correctly within the same hook execution.

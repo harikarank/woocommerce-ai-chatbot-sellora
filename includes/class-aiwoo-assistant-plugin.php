@@ -400,6 +400,9 @@ final class Plugin {
 				'widgetStateKey' => 'ai_woo_assistant_widget_state',
 				'settings'       => array(
 					'maxMessageLength' => max( 10, (int) $this->settings->get( 'max_message_length' ) ),
+					'autoOpenDelay'    => '' !== (string) $this->settings->get( 'auto_open_delay' )
+						? (int) $this->settings->get( 'auto_open_delay' )
+						: 0,
 				),
 			)
 		);

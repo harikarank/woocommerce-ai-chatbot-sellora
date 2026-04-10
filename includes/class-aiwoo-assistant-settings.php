@@ -79,6 +79,8 @@ final class Settings {
 		'no_match_text'           => "We couldn't find an exact match. Please share more details.",
 		// Form border colour
 		'color_form_border'       => '',
+		// Auto-open delay (seconds). Empty string = disabled.
+		'auto_open_delay'         => '',
 		// MCP / AI Intelligence
 		'enable_mcp'              => 'no',
 		'mcp_max_products'        => 5,
@@ -260,6 +262,13 @@ final class Settings {
 			$settings[ $key ] = isset( $input[ $key ] )
 				? ( sanitize_hex_color( $input[ $key ] ) ?? '' )
 				: '';
+		}
+
+		// Auto-open delay.
+		if ( isset( $input['auto_open_delay'] ) && '' !== trim( (string) $input['auto_open_delay'] ) ) {
+			$settings['auto_open_delay'] = (string) max( 1, min( 300, absint( $input['auto_open_delay'] ) ) );
+		} else {
+			$settings['auto_open_delay'] = '';
 		}
 
 		// MCP / AI Intelligence settings.
@@ -556,6 +565,18 @@ final class Settings {
 					esc_textarea( (string) $value )
 				);
 				echo '<p class="description">' . esc_html__( 'Shown when no matching products are found.', 'ai-woocommerce-assistant' ) . '</p>';
+				break;
+
+			case 'auto_open_delay':
+				printf(
+					'<input type="number" min="1" max="300" id="%1$s" name="%2$s" value="%3$s" placeholder="%4$s" style="width:80px;" /> %5$s',
+					esc_attr( $field_id ),
+					esc_attr( $name ),
+					esc_attr( (string) $value ),
+					esc_attr__( 'e.g. 3', 'ai-woocommerce-assistant' ),
+					esc_html__( 'seconds', 'ai-woocommerce-assistant' )
+				);
+				echo '<p class="description">' . esc_html__( 'Automatically open the chat widget after this many seconds when the page loads. Leave blank to disable auto-open.', 'ai-woocommerce-assistant' ) . '</p>';
 				break;
 
 			default:

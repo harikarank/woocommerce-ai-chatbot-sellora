@@ -354,6 +354,16 @@
 	setLoading( false );
 	setOpen( state.isOpen );
 
+	// Auto-open after a delay if configured and the widget is not already open.
+	const autoOpenDelay = config.settings && config.settings.autoOpenDelay;
+	if ( autoOpenDelay && ! state.isOpen ) {
+		window.setTimeout( function () {
+			if ( ! state.isOpen ) {
+				setOpen( true );
+			}
+		}, autoOpenDelay * 1000 );
+	}
+
 	elements.launcher.addEventListener( 'click', function () {
 		setOpen( ! state.isOpen );
 	} );
