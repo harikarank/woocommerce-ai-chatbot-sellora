@@ -269,6 +269,10 @@
 	flex-shrink: 0;
 }
 
+.aiwoo-loading[hidden] {
+	display: none;
+}
+
 .aiwoo-loading__dot {
 	width: 3px;
 	height: 16px;
