@@ -257,6 +257,12 @@ Important note:
 
 File: `includes/class-aiwoo-assistant-chat-service.php`
 
+### Decision order in `generate_reply()`
+
+1. **Quick reply match** — intercepts before any catalog/AI call; returns immediately if matched
+2. **No API key guard** — checks if the selected provider's API key is blank; if so, returns `no_match_text` + enquiry form without any AI or catalog call
+3. **Route to MCP or legacy path**
+
 ### If matching products are found
 
 Flow:
@@ -304,7 +310,9 @@ Returned response shape:
 
 File: `includes/class-aiwoo-assistant-admin-menu.php`
 
-Top-level menu slug: `sellora-ai` | Icon: `dashicons-format-chat` | Position: 58
+Top-level menu slug: `sellora-ai` | Icon: inline base64 SVG | Position: 58
+
+`Admin_Menu` is instantiated via `Plugin::init_admin_menu()` hooked to `admin_menu` at **priority 1** (not `admin_init` — `admin_menu` fires before `admin_init` so menus would never register). The constructor's `add_action('admin_menu', ...)` at default priority 10 fires within the same hook execution.
 
 Sub-pages:
 
@@ -478,6 +486,7 @@ Currently includes:
   - `iconUrl`
   - `companyLogo`
   - `employeePhoto`
+  - `faviconUrl` — always `AI_WOO_ASSISTANT_URL . 'assets/img/favicon.svg'`; used as assistant avatar fallback when `employeePhoto` is empty
 - `storeContext`
   - `currencySymbol`
   - `pageUrl`
@@ -1054,6 +1063,19 @@ Full security audit performed. Six issues resolved:
   - New admin template `admin/quick-replies-page.php`: list view with Title/Keywords/Match type/Response preview/Priority/Status/Edit+Delete actions; add/edit form with all fields + nonce + capability check. Add = `?action=add`, Edit = `?action=edit&id=N`.
   - `woocommerce-ai-chatbot-sellora.php` — require new class, activation hook creates both tables.
   - `uninstall.php` — drops `aiwoo_quick_replies` table, deletes `aiwoo_qr_db_version` option and transient.
+
+### 2026-04-10 (session 21)
+
+- **Admin menu bug fix** — `Plugin::init_admin_menu()` was hooked to `admin_init` (priority 5). `admin_menu` fires before `admin_init` in WordPress, so `Admin_Menu::register_menus()` was never called — all menu pages were missing. Fixed by hooking `init_admin_menu` to `admin_menu` at priority 1 instead. The constructor's `add_action('admin_menu', ...)` at default priority 10 now fires correctly within the same hook execution.
+- **CSS: `.aiwoo-widget section`** — added `padding: 0` rule.
+- **CSS: `.aiwoo-panel__logo`** — added `color: #ffffff` default.
+- **CSS: `--aiwoo-primary` default** changed from `#9a162d` to `#7310ec`.
+- **CSS: `--aiwoo-primary-dark`** changed from hardcoded `#7d1125` to `color-mix(in srgb, var(--aiwoo-primary) 80%, black)` — auto-darkens whatever primary color is configured.
+- **CSS: `--aiwoo-primary-deep`** changed from hardcoded `#650e1d` to `color-mix(in srgb, var(--aiwoo-primary) 65%, black)` — even darker auto-derived shade.
+- **Assistant avatar fallback** — `createAvatar('assistant')` in `chat.js` now always renders an `<img>`. Uses `config.ui.employeePhoto` if set, falls back to `config.ui.faviconUrl` (`assets/img/favicon.svg`). `faviconUrl` added to the PHP `wp_localize_script` `ui` array.
+- **No API key → rules-based only** — `Chat_Service::generate_reply()` now checks (after quick-reply match) whether the active provider's API key is blank. If blank, returns `no_match_text` + enquiry form immediately, skipping all catalog and AI calls.
+- **Loading indicator order fix** — in `handleSend()`, `setLoading(false)` is now called *before* `addMessage()` in both try and catch branches. Removed the `finally` block. Loading indicator disappears before the message renders, not after.
+- **Auto-focus after response** — after the try/catch in `handleSend()`, `elements.input.focus()` is called unconditionally so the user can type again immediately after every reply.
 
 ### 2026-04-08 (session 9)
 

@@ -8,9 +8,9 @@
    ─────────────────────────────────────────────────────────────────────────── */
 .aiwoo-widget {
 	/* Accent */
-	--aiwoo-primary:       #9a162d;
-	--aiwoo-primary-dark:  #7d1125;
-	--aiwoo-primary-deep:  #650e1d;
+	--aiwoo-primary:       #7310ec;
+	--aiwoo-primary-dark:  color-mix(in srgb, var(--aiwoo-primary) 80%, black);
+	--aiwoo-primary-deep:  color-mix(in srgb, var(--aiwoo-primary) 65%, black);
 
 	/* Layout surfaces */
 	--aiwoo-surface:       #ffffff;
@@ -176,6 +176,11 @@
 	object-fit: cover;
 	border: 2px solid rgba(255, 255, 255, 0.35);
 	box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.1);
+	color: #ffffff;
+}
+
+.aiwoo-widget section {
+	padding: 0;
 }
 
 .aiwoo-panel__header h2,

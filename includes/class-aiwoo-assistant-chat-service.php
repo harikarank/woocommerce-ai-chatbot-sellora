@@ -74,7 +74,30 @@ final class Chat_Service {
 			);
 		}
 
-		// ── 2. Route to MCP or legacy path ────────────────────────────────────
+		// ── 2. No API key — rules-based replies only (no AI call) ────────────
+		$provider_key_map = array(
+			'openai' => 'openai_api_key',
+			'claude' => 'claude_api_key',
+			'gemini' => 'gemini_api_key',
+		);
+		$provider         = (string) $this->settings->get( 'provider' );
+		$key_setting      = $provider_key_map[ $provider ] ?? 'openai_api_key';
+
+		if ( '' === trim( (string) $this->settings->get( $key_setting ) ) ) {
+			$no_match = trim( (string) $this->settings->get( 'no_match_text' ) );
+			if ( '' === $no_match ) {
+				$no_match = __( "We couldn't find an exact match. Please share more details.", 'ai-woocommerce-assistant' );
+			}
+			return array(
+				'message'           => $no_match,
+				'html'              => false,
+				'enquiry_form'      => true,
+				'enquiry_form_html' => $this->get_enquiry_form_html(),
+				'recommendations'   => array(),
+			);
+		}
+
+		// ── 3. Route to MCP or legacy path ────────────────────────────────────
 		if ( 'yes' === $this->settings->get( 'enable_mcp' ) ) {
 			return $this->generate_reply_mcp( $message, $history, $page_context, $session_id, $ip_address );
 		}

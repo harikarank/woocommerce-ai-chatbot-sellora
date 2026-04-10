@@ -124,9 +124,9 @@
 		const avatar = document.createElement( 'div' );
 		avatar.className = 'aiwoo-avatar aiwoo-avatar--' + role;
 
-		if ( role === 'assistant' && config.ui.employeePhoto ) {
+		if ( role === 'assistant' ) {
 			const img = document.createElement( 'img' );
-			img.src = config.ui.employeePhoto;
+			img.src = config.ui.employeePhoto || config.ui.faviconUrl;
 			img.alt = '';
 			avatar.appendChild( img );
 		} else if ( role === 'user' ) {
@@ -276,16 +276,18 @@
 				),
 			} );
 
+			setLoading( false );
 			addMessage( 'assistant', payload.message, {
 				html: Boolean( payload.html ),
 				enquiryForm: Boolean( payload.enquiry_form ),
 				enquiryFormHtml: payload.enquiry_form_html || '',
 			} );
 		} catch ( error ) {
-			addMessage( 'assistant', error.message || config.strings.error );
-		} finally {
 			setLoading( false );
+			addMessage( 'assistant', error.message || config.strings.error );
 		}
+
+		elements.input.focus();
 	}
 
 	async function handleEnquirySubmit( event ) {

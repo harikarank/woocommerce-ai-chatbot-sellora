@@ -387,6 +387,7 @@ final class Plugin {
 					'iconUrl'       => $this->settings->get( 'chat_icon' ),
 					'companyLogo'   => $this->settings->get( 'company_logo' ),
 					'employeePhoto' => $this->settings->get( 'employee_photo' ),
+					'faviconUrl'    => esc_url( AI_WOO_ASSISTANT_URL . 'assets/img/favicon.svg' ),
 				),
 				'storeContext'   => array(
 					'currencySymbol' => function_exists( 'get_woocommerce_currency_symbol' ) ? get_woocommerce_currency_symbol() : get_option( 'woocommerce_currency', 'USD' ),
