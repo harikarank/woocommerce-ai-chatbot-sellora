@@ -55,7 +55,7 @@
 	--aiwoo-counter-text:       var(--aiwoo-copy-soft);
 
 	/* Panel borders */
-	--aiwoo-panel-border:           #000000;
+	--aiwoo-panel-border:           #e5e5e5;
 	--aiwoo-header-border-bottom:   var(--aiwoo-primary-dark);
 
 	/* Radius / sharpness */
@@ -130,7 +130,7 @@
 	height: min(580px, calc(100vh - 110px));
 	border: 2px solid var(--aiwoo-panel-border);
 	border-radius: var(--aiwoo-radius);
-	background: var(--aiwoo-primary);
+	background: var(--aiwoo-panel-border);
 	box-shadow: var(--aiwoo-shadow-panel);
 	display: flex;
 	flex-direction: column;
@@ -570,7 +570,7 @@
 	background: var(--aiwoo-surface);
 	border: 1px solid var(--aiwoo-border);
 	border-left: 3px solid var(--aiwoo-primary);
-	border-radius: var(--aiwoo-radius);
+	border-radius: 0 var(--aiwoo-radius) var(--aiwoo-radius) 0;
 	padding: 14px;
 	margin: 20px 0px;
 }
