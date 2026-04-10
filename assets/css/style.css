@@ -220,6 +220,7 @@
 	width: 6px;
 	height: 6px;
 	background: #22c55e;
+	border-radius: 100px;
 	opacity: 1; /* override parent opacity via stacking context */
 }
 
