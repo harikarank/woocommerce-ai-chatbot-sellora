@@ -578,7 +578,7 @@ final class Settings {
 						'color_loading_text'      => __( '(same as soft text)', 'ai-woocommerce-assistant' ),
 						'color_counter_bg'        => __( '(same as surface)', 'ai-woocommerce-assistant' ),
 						'color_counter_text'      => __( '(same as soft text)', 'ai-woocommerce-assistant' ),
-						'color_panel_border'      => '#000000',
+						'color_panel_border'      => '#ededed',
 						'color_header_border_bottom' => __( '(same as accent hover)', 'ai-woocommerce-assistant' ),
 						'color_form_bg'           => '#ffffff',
 						'color_form_border'       => '#000000',

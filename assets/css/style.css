@@ -55,8 +55,8 @@
 	--aiwoo-counter-text:       var(--aiwoo-copy-soft);
 
 	/* Panel borders */
-	--aiwoo-panel-border:           #e5e5e5;
-	--aiwoo-panel-bg:               #e5e5e5;
+	--aiwoo-panel-border:           #ededed;
+	--aiwoo-panel-bg:               #ededed;
 	--aiwoo-header-border-bottom:   var(--aiwoo-primary-dark);
 
 	/* Radius / sharpness */
