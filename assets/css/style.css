@@ -130,7 +130,7 @@
 	height: min(580px, calc(100vh - 110px));
 	border: 2px solid var(--aiwoo-panel-border);
 	border-radius: var(--aiwoo-radius);
-	background: var(--aiwoo-surface);
+	background: var(--aiwoo-primary);
 	box-shadow: var(--aiwoo-shadow-panel);
 	display: flex;
 	flex-direction: column;
