@@ -467,6 +467,8 @@ final class Plugin {
 			'color_panel_border'      => '--aiwoo-panel-border',
 			'color_header_border_bottom' => '--aiwoo-header-border-bottom',
 			'color_form_bg'           => '--aiwoo-form-bg',
+			'color_avatar_assistant_bg' => '--aiwoo-avatar-assistant-bg',
+			'color_avatar_user_bg'    => '--aiwoo-avatar-user-bg',
 		);
 
 		foreach ( $map as $setting_key => $css_var ) {

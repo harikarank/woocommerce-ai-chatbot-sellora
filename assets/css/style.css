@@ -54,6 +54,10 @@
 	--aiwoo-counter-bg:         var(--aiwoo-surface);
 	--aiwoo-counter-text:       var(--aiwoo-copy-soft);
 
+	/* Avatars */
+	--aiwoo-avatar-assistant-bg:    #ffffff;
+	--aiwoo-avatar-user-bg:         #ababab;
+
 	/* Panel borders */
 	--aiwoo-panel-border:           #ededed;
 	--aiwoo-panel-bg:               #ededed;
@@ -104,8 +108,8 @@
 }
 
 .aiwoo-launcher__icon {
-	width: 26px;
-	height: 26px;
+	width: 35px;
+	height: 35px;
 	object-fit: contain;
 }
 
@@ -338,7 +342,8 @@
 	display: block;
 }
 
-.aiwoo-avatar--user       { color: var(--aiwoo-user-bubble-text); }
+.aiwoo-avatar--assistant  { background: var(--aiwoo-avatar-assistant-bg); }
+.aiwoo-avatar--user       { background: var(--aiwoo-avatar-user-bg); color: var(--aiwoo-user-bubble-text); }
 .aiwoo-avatar--user svg   { width: 15px; height: 15px; }
 
 .aiwoo-avatar--employee {

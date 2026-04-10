@@ -62,6 +62,8 @@ final class Settings {
 		'color_panel_border'      => '',
 		'color_header_border_bottom' => '',
 		'color_form_bg'           => '',
+		'color_avatar_assistant_bg' => '',
+		'color_avatar_user_bg'    => '',
 		// Widget shape
 		'border_radius'           => 0,
 		// Enquiry form
@@ -154,6 +156,8 @@ final class Settings {
 			'color_loading_text'         => __( 'Typing indicator text color', 'ai-woocommerce-assistant' ),
 			'color_counter_bg'           => __( 'Character counter background', 'ai-woocommerce-assistant' ),
 			'color_counter_text'         => __( 'Character counter text color', 'ai-woocommerce-assistant' ),
+			'color_avatar_assistant_bg'  => __( 'Assistant avatar background', 'ai-woocommerce-assistant' ),
+			'color_avatar_user_bg'       => __( 'User avatar background', 'ai-woocommerce-assistant' ),
 		);
 
 		foreach ( $fields as $field_key => $label ) {
@@ -242,6 +246,7 @@ final class Settings {
 			'color_counter_bg', 'color_counter_text',
 			'color_panel_border', 'color_header_border_bottom',
 			'color_form_bg', 'color_form_border',
+			'color_avatar_assistant_bg', 'color_avatar_user_bg',
 		);
 
 		$settings['border_radius'] = isset( $input['border_radius'] )
@@ -578,6 +583,8 @@ final class Settings {
 						'color_loading_text'      => __( '(same as soft text)', 'ai-woocommerce-assistant' ),
 						'color_counter_bg'        => __( '(same as surface)', 'ai-woocommerce-assistant' ),
 						'color_counter_text'      => __( '(same as soft text)', 'ai-woocommerce-assistant' ),
+						'color_avatar_assistant_bg' => '#ffffff',
+						'color_avatar_user_bg'    => '#ababab',
 						'color_panel_border'      => '#ededed',
 						'color_header_border_bottom' => __( '(same as accent hover)', 'ai-woocommerce-assistant' ),
 						'color_form_bg'           => '#ffffff',
