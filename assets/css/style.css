@@ -156,6 +156,7 @@
 	padding: 13px 16px;
 	background: var(--aiwoo-header-bg);
 	border-bottom: 3px solid var(--aiwoo-header-border-bottom);
+	border-radius: var(--aiwoo-radius) var(--aiwoo-radius) 0 0;
 	flex-shrink: 0;
 }
 
@@ -515,6 +516,7 @@
 	grid-template-columns: 1fr auto;
 	border-top: 1px solid var(--aiwoo-form-border);
 	background: var(--aiwoo-form-bg);
+	border-radius: 0 0 var(--aiwoo-radius) var(--aiwoo-radius);
 	flex-shrink: 0;
 	overflow: visible;
 }
@@ -528,6 +530,7 @@
 	font-size: 13.5px;
 	color: var(--aiwoo-input-text);
 	background: var(--aiwoo-input-bg);
+	border-radius: 0 0 var(--aiwoo-radius) var(--aiwoo-radius);
 	resize: none;
 	outline: none;
 	transition: border-right-color 0.15s;
@@ -601,6 +604,7 @@
 	font-size: 13px;
 	color: var(--aiwoo-copy);
 	background: var(--aiwoo-surface);
+	border-radius: var(--aiwoo-radius);
 	outline: none;
 	transition: border-bottom-color 0.15s;
 }
@@ -618,6 +622,7 @@
 	font: 700 13px/1 inherit;
 	letter-spacing: 0.05em;
 	text-transform: uppercase;
+	border-radius: var(--aiwoo-radius);
 	cursor: pointer;
 	transition: background 0.15s;
 }
